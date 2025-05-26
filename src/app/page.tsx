@@ -1,9 +1,9 @@
-import FinancialDashboardClient from '@/components/FinancialDashboardClient'
+import FinancialDashboardWithFirebase from '@/components/FinancialDashboardWithFirebase'
 
 export default function Home() {
   return (
     <main className="container mx-auto p-4">
-      <FinancialDashboardClient />
+      <FinancialDashboardWithFirebase />
     </main>
   )
 }
