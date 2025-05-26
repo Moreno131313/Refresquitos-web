@@ -5,6 +5,7 @@ export interface IncomeItem {
   amount: number;
   type: 'Venta Empleado' | 'Pedido Puerto López' | 'Pedido Puerto Gaitán' | 'Paca Villavicencio';
   employee?: 'César' | 'Yesid';
+  description?: string;
   createdAt: string;
 }
 
@@ -72,6 +73,7 @@ export interface FinancialSummary {
   totalIncome: number;
   totalExpenses: number;
   netProfit: number;
+  profitMargin: number;
   tithe: number;
   savings: number;
   available: number;

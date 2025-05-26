@@ -268,7 +268,7 @@ export default function FinancialDashboardWithFirebase() {
   }
 
   // Cálculos de resumen financiero
-  const calculateFinancialSummary = (): FinancialSummary => {
+  const calculateFinancialSummary = () => {
     const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
     const netProfit = totalIncome - totalExpenses
@@ -283,19 +283,17 @@ export default function FinancialDashboardWithFirebase() {
   }
 
   // Cálculos de resumen de producción
-  const calculateProductionSummary = (): ProductionSummary => {
-    const totalUnitsProduced = productions.reduce((sum, production) => sum + production.quantity, 0)
+  const calculateProductionSummary = () => {
+    const totalProduced = productions.reduce((sum, production) => sum + production.quantity, 0)
     const totalProductionCost = productions.reduce((sum, production) => sum + production.totalCost, 0)
-    const averageCostPerUnit = totalUnitsProduced > 0 ? totalProductionCost / totalUnitsProduced : 0
-    const totalUnitsSold = incomes.reduce((sum, income) => sum + income.quantity, 0)
-    const inventoryUnits = totalUnitsProduced - totalUnitsSold
+    const averageCostPerUnit = totalProduced > 0 ? totalProductionCost / totalProduced : 0
+    const currentInventory = totalProduced - incomes.reduce((sum, income) => sum + income.quantity, 0)
 
     return {
-      totalUnitsProduced,
+      totalProduced,
       totalProductionCost,
       averageCostPerUnit,
-      totalUnitsSold,
-      inventoryUnits
+      currentInventory
     }
   }
 
