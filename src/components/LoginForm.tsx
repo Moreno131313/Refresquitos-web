@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { loginSchema, type LoginFormData } from '@/lib/validators'
-import { ADMIN_CREDENTIALS } from '@/types/auth'
+import { validateCredentials, getAuthCredentials } from '@/types/auth'
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react'
 
 interface LoginFormProps {
@@ -30,9 +30,10 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   const handleFormSubmit = (data: LoginFormData) => {
     setLoginError('')
     
-    // Verificar credenciales
-    if (data.email === ADMIN_CREDENTIALS.email && data.password === ADMIN_CREDENTIALS.password) {
-      onLogin(ADMIN_CREDENTIALS.email, ADMIN_CREDENTIALS.name)
+    // Verificar credenciales usando la función segura
+    if (validateCredentials(data.email, data.password)) {
+      const credentials = getAuthCredentials()
+      onLogin(credentials.email, 'Administrador')
     } else {
       setLoginError('Email o contraseña incorrectos')
     }
