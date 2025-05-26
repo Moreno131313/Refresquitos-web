@@ -189,13 +189,22 @@ export default function FinancialDashboardClient() {
 
   // Funciones para manejar ciclos de empleados
   const handleUpdateEmployeeCycleStart = (employee: 'César' | 'Yesid', newStartDate: string) => {
-    setEmployeeCycleInfoList(prev => 
-      prev.map(cycle => 
+    console.log('📅 Actualizando fecha de inicio de ciclo:', {
+      employee,
+      newStartDate,
+      timestamp: new Date().toISOString()
+    })
+    
+    setEmployeeCycleInfoList(prev => {
+      const updated = prev.map(cycle => 
         cycle.employee === employee 
           ? { ...cycle, cycleStartDate: newStartDate }
           : cycle
       )
-    )
+      console.log('📊 Lista actualizada:', updated)
+      return updated
+    })
+    
     toast({
       title: "Fecha de inicio actualizada",
       description: `Nueva fecha de inicio de ciclo para ${employee}: ${newStartDate}`

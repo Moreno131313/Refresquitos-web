@@ -15,11 +15,19 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('es-CO', {
+  // Usar createLocalDate para evitar problemas de zona horaria
+  const localDate = createLocalDate(date);
+  return localDate.toLocaleDateString('es-CO', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   });
+}
+
+// Función para crear fecha local desde string YYYY-MM-DD
+function createLocalDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day) // month es 0-indexed
 }
 
 export function generateId(): string {
@@ -39,12 +47,6 @@ export function getMonthName(monthString: string): string {
   const [year, month] = monthString.split('-');
   const date = new Date(parseInt(year), parseInt(month) - 1);
   return date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
-}
-
-// Función para crear fecha local desde string YYYY-MM-DD
-function createLocalDate(dateString: string): Date {
-  const [year, month, day] = dateString.split('-').map(Number)
-  return new Date(year, month - 1, day) // month es 0-indexed
 }
 
 // Función para calcular días trabajados en un ciclo
@@ -128,4 +130,25 @@ export function addDays(dateString: string, days: number): string {
   const newDay = String(date.getDate()).padStart(2, '0')
   
   return `${newYear}-${newMonth}-${newDay}`
+}
+
+// Función de prueba para verificar el manejo de fechas
+export function testDateHandling(dateString: string): { 
+  original: string, 
+  addOne: string, 
+  formatted: string 
+} {
+  console.log('Testing date handling for:', dateString)
+  const addedOne = addDays(dateString, 1)
+  const formatted = formatDate(dateString)
+  
+  console.log('Original:', dateString)
+  console.log('Add 1 day:', addedOne)
+  console.log('Formatted:', formatted)
+  
+  return {
+    original: dateString,
+    addOne: addedOne,
+    formatted: formatted
+  }
 } 

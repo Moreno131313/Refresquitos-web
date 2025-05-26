@@ -143,6 +143,11 @@ export default function EmployeeDashboard({
 
   const handleSaveCycleStart = (employee: 'César' | 'Yesid') => {
     if (newCycleDate) {
+      console.log('🔍 Guardando fecha de ciclo:', {
+        employee,
+        selectedDate: newCycleDate,
+        timestamp: new Date().toISOString()
+      })
       onUpdateEmployeeCycleStart(employee, newCycleDate)
       setEditingCycle(null)
       setNewCycleDate('')
