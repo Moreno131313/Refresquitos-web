@@ -60,7 +60,7 @@ Ir a: http://localhost:3000
 ## 💡 Características Importantes
 
 ### 💾 Datos Automáticos
-- **Precio por unidad**: $1,000 COP (automático)
+- **Precio por unidad**: $3,000 COP (automático)
 - **Cálculo de utilidad**: Ingresos - Gastos
 - **Diezmo**: 10% de la utilidad
 - **Ahorro**: 20% de la utilidad

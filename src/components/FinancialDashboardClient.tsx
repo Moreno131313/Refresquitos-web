@@ -93,7 +93,7 @@ export default function FinancialDashboardClient() {
 
   // Funciones para manejar ingresos
   const addIncome = (incomeData: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => {
-    const amount = incomeData.quantity * 1000 // $1000 por unidad
+    const amount = incomeData.quantity * 3000 // $3000 COP por unidad
     const newIncome: IncomeItem = {
       ...incomeData,
       id: generateId(),
@@ -300,7 +300,7 @@ export default function FinancialDashboardClient() {
               <CardHeader>
                 <CardTitle>Registrar Nuevo Ingreso</CardTitle>
                 <CardDescription>
-                  Registra las ventas de refrescos. El precio por unidad es de $1,000.
+                  Registra las ventas de refrescos. El precio por unidad es de $3,000 COP.
                 </CardDescription>
               </CardHeader>
               <CardContent>
