@@ -133,14 +133,13 @@ npm install --save-dev gh-pages
 ## 🔐 **Consideraciones de Seguridad**
 
 ### ⚠️ **IMPORTANTE:**
-Tu sistema tiene credenciales hardcodeadas:
-- Email: duvanmoreno13@gmail.com
-- Contraseña: Moreno123@$#
+Las credenciales de acceso están configuradas en el código por motivos de desarrollo.
 
-### 🛡️ **Recomendaciones:**
-1. **Cambiar credenciales** antes de publicar
+### 🛡️ **Recomendaciones de Seguridad:**
+1. **Cambiar credenciales** antes de publicar en producción
 2. **Usar variables de entorno** para datos sensibles
-3. **Considerar hacer el repositorio privado**
+3. **Considerar hacer el repositorio privado** si contiene información sensible
+4. **Proporcionar credenciales por separado** a usuarios autorizados
 
 ---
 

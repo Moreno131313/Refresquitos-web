@@ -79,8 +79,7 @@ http://localhost:3000
 
 ## 🔐 Credenciales de Acceso
 
-- **Email**: duvanmoreno13@gmail.com
-- **Contraseña**: Moreno123@$#
+Las credenciales de acceso se proporcionan por separado por motivos de seguridad. Contacta al administrador del sistema para obtener acceso.
 
 ## 📁 Estructura del Proyecto
 
