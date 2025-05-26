@@ -1,237 +1,155 @@
 # 🥤 Refresquitos Manager
 
-Sistema de gestión financiera y de producción para el negocio "Refresquitos". Una aplicación web moderna construida con Next.js, React, TypeScript y Tailwind CSS.
+Sistema completo de gestión empresarial para la producción y venta de refrescos, desarrollado con Next.js y TypeScript.
+
+![Refresquitos Logo](public/logo1.png)
 
 ## 🚀 Características Principales
 
-### 📊 Gestión de Ingresos
-- Registro de ventas con cantidad de unidades vendidas
-- Cálculo automático del monto total ($1000 por unidad)
-- Tipos de venta: "Venta Empleado", "Pedido Puerto López", "Pedido Puerto Gaitán", "Paca Villavicencio"
-- Seguimiento de ventas por empleado (César y Yesid)
-- Listado completo de ingresos con opción de eliminación
+### 💰 Gestión de Ingresos
+- Registro de ventas con cálculo automático ($1,000 por unidad)
+- Tipos de venta: Empleado, Puerto López, Puerto Gaitán, Paca Villavicencio
+- Seguimiento de vendedores (César y Yesid)
+- Listado completo con opción de eliminación
 
-### 💰 Gestión de Gastos
-- Registro de gastos por categorías especializadas
-- Categorías: Costos Fijos, Materia Prima Directa, Mano de Obra Directa, etc.
-- Listado completo de gastos con opción de eliminación
+### 💸 Gestión de Gastos
+- Categorías especializadas para negocio de manufactura
+- Costos Fijos, Materias Primas, Mano de Obra, Gastos Administrativos
+- Control detallado de todos los gastos
 
 ### 🏭 Gestión de Producción
-- Registro de lotes de producción con cantidad de refrescos
-- Control detallado de 19 insumos de materia prima
-- Cálculo de costos de mano de obra directa e indirectos
-- Cálculo automático del costo total y costo por unidad
-- Resumen general de producción con inventario actual
+- Registro de lotes con 19 materias primas diferentes
+- Cálculo automático de costos por lote y por unidad
+- Resumen general de producción
+- Control de inventario automático
 
-### 👥 Control de Empleados
-- Seguimiento de ausencias de César y Yesid
-- Resumen mensual de rendimiento por empleado
-- Cálculo de elegibilidad para bonos por asistencia
-- Métricas de ventas y días trabajados
+### 👥 Gestión de Empleados
+- Sistema de ciclos de trabajo de 30 días
+- Registro de ausencias
+- Cálculo automático de bonificaciones
+- Métricas de rendimiento por empleado
 
-### 📈 Reportes y Visualizaciones
-- Resumen financiero con utilidad neta, diezmo (10%) y ahorro (20%)
+### 📊 Reportes y Visualizaciones
+- Resumen financiero completo
+- Cálculos de diezmo (10%) y ahorro (20%)
 - Gráficos de distribución de ingresos y gastos
-- Control de inventario en tiempo real
-- Dashboard con métricas principales
-
-### 💾 Persistencia de Datos
-- Almacenamiento local en el navegador
-- Los datos persisten entre sesiones
-- No requiere base de datos externa
+- Dashboard empresarial interactivo
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **Next.js 14** - Framework de React con App Router
-- **React 18** - Librería de interfaz de usuario
-- **TypeScript** - Tipado estático para JavaScript
-- **Tailwind CSS** - Framework de CSS utility-first
-- **ShadCN UI** - Componentes de UI modernos y accesibles
-- **React Hook Form** - Manejo eficiente de formularios
-- **Zod** - Validación de esquemas
-- **Recharts** - Gráficos y visualizaciones
-- **Lucide React** - Iconos modernos
-- **Radix UI** - Componentes primitivos accesibles
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Estilos**: Tailwind CSS, ShadCN UI
+- **Formularios**: React Hook Form + Zod
+- **Gráficos**: Recharts
+- **Iconos**: Lucide React
+- **Persistencia**: LocalStorage (sin base de datos externa)
 
-## 📋 Requisitos Previos
+## 🔧 Instalación y Configuración
 
-- Node.js 18.0.0 o superior
-- npm, yarn, pnpm o bun
+### Prerrequisitos
+- Node.js 18+ 
+- npm o yarn
 
-## 🚀 Instalación y Configuración
+### Pasos de instalación
 
-### 1. Clonar o descargar el proyecto
+1. **Clonar el repositorio**
 ```bash
-# Si tienes git instalado
-git clone <url-del-repositorio>
-cd refresquitos
-
-# O simplemente descargar y extraer los archivos
+git clone https://github.com/Moreno131313/Refresquitos.git
+cd Refresquitos
 ```
 
-### 2. Instalar dependencias
+2. **Instalar dependencias**
 ```bash
-# Con npm
 npm install
-
-# Con yarn
-yarn install
-
-# Con pnpm
-pnpm install
-
-# Con bun
-bun install
 ```
 
-### 3. Ejecutar en modo desarrollo
+3. **Agregar el logo** (opcional)
+- Coloca tu archivo `logo1.png` en la carpeta `public/`
+- El sistema tiene un fallback automático si no se encuentra
+
+4. **Ejecutar en desarrollo**
 ```bash
-# Con npm
 npm run dev
-
-# Con yarn
-yarn dev
-
-# Con pnpm
-pnpm dev
-
-# Con bun
-bun dev
 ```
 
-### 4. Abrir en el navegador
-Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
+5. **Abrir en el navegador**
+```
+http://localhost:3000
+```
+
+## 🔐 Credenciales de Acceso
+
+- **Email**: duvanmoreno13@gmail.com
+- **Contraseña**: Moreno123@$#
 
 ## 📁 Estructura del Proyecto
 
 ```
-src/
-├── app/                    # Páginas de Next.js (App Router)
-│   ├── globals.css        # Estilos globales y variables CSS
-│   ├── layout.tsx         # Layout principal de la aplicación
-│   └── page.tsx           # Página de inicio
-├── components/            # Componentes de React
-│   ├── ui/               # Componentes base de ShadCN UI
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── input.tsx
-│   │   └── tabs.tsx
-│   ├── AppHeader.tsx     # Header de la aplicación
-│   ├── FinancialDashboardClient.tsx  # Componente principal
-│   ├── IncomeForm.tsx    # Formulario de ingresos
-│   ├── ExpenseForm.tsx   # Formulario de gastos
-│   ├── ProductionForm.tsx # Formulario de producción
-│   └── EmployeeDashboard.tsx # Dashboard de empleados
-├── hooks/                # Custom hooks de React
-│   ├── useToast.ts      # Hook para notificaciones
-│   └── useMobile.ts     # Hook para detectar móviles
-├── lib/                  # Utilidades y lógica
-│   ├── utils.ts         # Funciones de utilidad
-│   └── validators.ts    # Esquemas de validación con Zod
-└── types/               # Definiciones de tipos TypeScript
-    └── financials.ts    # Tipos para el sistema financiero
+Refresquitos/
+├── public/                 # Archivos estáticos
+│   └── logo1.png          # Logo de la empresa
+├── src/
+│   ├── app/               # App Router de Next.js
+│   ├── components/        # Componentes React
+│   │   ├── ui/           # Componentes de UI base
+│   │   └── ...           # Componentes específicos
+│   ├── hooks/            # Custom hooks
+│   ├── lib/              # Utilidades y validadores
+│   └── types/            # Definiciones de TypeScript
+├── README.md
+└── package.json
 ```
 
-## 🎯 Uso de la Aplicación
-
-### Navegación Principal
-La aplicación tiene 5 pestañas principales:
-
-1. **Resumen** - Dashboard con métricas generales y gráficos
-2. **Ingresos** - Registro y listado de ventas
-3. **Gastos** - Registro y listado de gastos
-4. **Producción** - Gestión de lotes de producción
-5. **Empleados** - Control de ausencias y rendimiento
-
-### Registro de Ventas
-1. Ve a la pestaña "Ingresos"
-2. Completa el formulario con:
-   - Fecha de la venta
-   - Cantidad de unidades
-   - Tipo de venta
-   - Empleado (si es venta de empleado)
-3. El sistema calculará automáticamente el monto ($1000 x cantidad)
-
-### Registro de Producción
-1. Ve a la pestaña "Producción"
-2. Ingresa la cantidad de refrescos producidos
-3. Completa los costos de los 19 materiales
-4. Agrega costos de mano de obra directa e indirectos
-5. El sistema calculará el costo total y por unidad
-
-### Control de Empleados
-1. Ve a la pestaña "Empleados"
-2. Registra ausencias de César o Yesid
-3. Revisa el resumen mensual de rendimiento
-4. Verifica elegibilidad para bonos por asistencia
-
-## 🔧 Scripts Disponibles
+## 🚀 Scripts Disponibles
 
 ```bash
-# Desarrollo
-npm run dev          # Inicia el servidor de desarrollo
-
-# Producción
-npm run build        # Construye la aplicación para producción
-npm run start        # Inicia el servidor de producción
-
-# Calidad de código
-npm run lint         # Ejecuta ESLint
-npm run type-check   # Verifica tipos de TypeScript
+npm run dev          # Servidor de desarrollo
+npm run build        # Build de producción
+npm run start        # Servidor de producción
+npm run lint         # Linter
+npm run type-check   # Verificación de tipos
 ```
 
-## 📱 Responsive Design
+## 📱 Características Técnicas
 
-La aplicación está optimizada para:
-- 📱 Dispositivos móviles (320px+)
-- 📱 Tablets (768px+)
-- 💻 Escritorio (1024px+)
-- 🖥️ Pantallas grandes (1440px+)
+- **Responsive Design**: Funciona en desktop, tablet y móvil
+- **PWA Ready**: Preparado para ser una Progressive Web App
+- **TypeScript**: Tipado estático para mayor robustez
+- **Persistencia Local**: Datos guardados en el navegador
+- **Autenticación**: Sistema de login seguro
+- **Validación**: Formularios con validación completa
 
-## 🎨 Personalización
+## 🎯 Funcionalidades Específicas
 
-### Colores y Tema
-Los colores se pueden personalizar en `src/app/globals.css`:
-```css
-:root {
-  --primary: 221.2 83.2% 53.3%;
-  --secondary: 210 40% 96%;
-  /* ... más variables */
-}
-```
+### Sistema de Ciclos de 30 Días
+- Cada empleado tiene ciclos independientes de 30 días laborales
+- Seguimiento automático de días trabajados (basado en ventas)
+- Cálculo de bonificaciones por ciclo completado
+- Gestión manual de fechas de inicio de ciclo
 
-### Componentes
-Los componentes de UI están en `src/components/ui/` y pueden ser personalizados según las necesidades.
+### Control de Inventario
+- Cálculo automático: Producido - Vendido = Inventario
+- Alertas visuales de stock
+- Historial completo de movimientos
 
-## 🐛 Solución de Problemas
+### Reportes Financieros
+- Ingresos totales y por categoría
+- Gastos detallados por tipo
+- Utilidad neta automática
+- Distribución de ganancias (diezmo, ahorro, disponible)
 
-### Error de dependencias
-```bash
-# Limpiar caché e instalar de nuevo
-rm -rf node_modules package-lock.json
-npm install
-```
+## 🤝 Contribución
 
-### Error de TypeScript
-```bash
-# Verificar tipos
-npm run type-check
-```
-
-### Problemas de estilos
-```bash
-# Reconstruir estilos de Tailwind
-npm run build
-```
+Este es un proyecto privado para Refresquitos. Para sugerencias o mejoras, contacta al desarrollador.
 
 ## 📄 Licencia
 
-Este proyecto es privado y está destinado exclusivamente para el negocio "Refresquitos".
+© 2024 Refresquitos Manager. Todos los derechos reservados.
 
-## 🤝 Soporte
+## 📞 Soporte
 
-Para soporte técnico o preguntas sobre la aplicación, contacta al equipo de desarrollo.
+Para soporte técnico o consultas sobre el sistema, contacta al administrador del proyecto.
 
 ---
 
-**¡Gracias por usar Refresquitos Manager! 🥤** 
+**Desarrollado con ❤️ para Refresquitos** 
