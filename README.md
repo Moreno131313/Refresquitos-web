@@ -7,7 +7,7 @@ Sistema completo de gestión empresarial para la producción y venta de refresco
 ## 🚀 Características Principales
 
 ### 💰 Gestión de Ingresos
-- Registro de ventas con cálculo automático ($3,000 COP por unidad)
+- Registro de ventas con cálculo automático ($1,000 COP por unidad)
 - Tipos de venta: Empleado, Puerto López, Puerto Gaitán, Paca Villavicencio
 - Seguimiento de vendedores (César y Yesid)
 - Listado completo con opción de eliminación
