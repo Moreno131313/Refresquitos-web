@@ -12,7 +12,7 @@ export interface AuthState {
 }
 
 export const ADMIN_CREDENTIALS = {
-  email: 'duvanmoreno13@gmail.com',
-  password: 'Moreno123@$#',
+  email: 'admin@refresquitos.com',
+  password: 'RefresquitosSecure2024!',
   name: 'Administrador'
 } as const; 
