@@ -257,28 +257,33 @@ export default function FinancialDashboardClient() {
         onLogout={logout}
       />
       
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="container mx-auto p-3 md:p-4 space-y-4 md:space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="resumen" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Resumen
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+            <TabsTrigger value="resumen" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Resumen</span>
+              <span className="sm:hidden">Res</span>
             </TabsTrigger>
-            <TabsTrigger value="ingresos" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Ingresos
+            <TabsTrigger value="ingresos" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Ingresos</span>
+              <span className="sm:hidden">Ing</span>
             </TabsTrigger>
-            <TabsTrigger value="gastos" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Gastos
+            <TabsTrigger value="gastos" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Gastos</span>
+              <span className="sm:hidden">Gas</span>
             </TabsTrigger>
-            <TabsTrigger value="produccion" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Producción
+            <TabsTrigger value="produccion" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Package className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Producción</span>
+              <span className="sm:hidden">Prod</span>
             </TabsTrigger>
-            <TabsTrigger value="empleados" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Empleados
+            <TabsTrigger value="empleados" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Users className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Empleados</span>
+              <span className="sm:hidden">Emp</span>
             </TabsTrigger>
           </TabsList>
 
