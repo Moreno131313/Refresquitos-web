@@ -1,9 +1,10 @@
+import { AuthProvider } from '@/components/AuthProvider'
 import FinancialDashboardWithFirebase from '@/components/FinancialDashboardWithFirebase'
 
 export default function Home() {
   return (
-    <main className="container mx-auto p-4">
+    <AuthProvider>
       <FinancialDashboardWithFirebase />
-    </main>
+    </AuthProvider>
   )
 }

@@ -1,15 +1,19 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { 
   collection, 
-  doc, 
-  setDoc, 
+  addDoc, 
+  updateDoc, 
   deleteDoc, 
+  doc, 
   onSnapshot, 
   query, 
   orderBy,
   Timestamp 
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { useAuth } from '@/components/AuthProvider'
 import { 
   IncomeItem, 
   ExpenseItem, 
@@ -18,232 +22,292 @@ import {
   EmployeeCycleInfo 
 } from '@/types/financials'
 
-export function useFirebaseData(userId: string) {
-  const [incomes, setIncomes] = useState<IncomeItem[]>([])
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([])
-  const [productions, setProductions] = useState<ProductionItem[]>([])
-  const [absences, setAbsences] = useState<AbsenceRecord[]>([])
-  const [employeeCycleInfoList, setEmployeeCycleInfoList] = useState<EmployeeCycleInfo[]>([])
+export interface Income {
+  id: string
+  amount: number
+  date: string
+  description?: string
+}
+
+export interface Expense {
+  id: string
+  amount: number
+  date: string
+  description: string
+  category?: string
+}
+
+export interface Production {
+  id: string
+  date: string
+  quantity: number
+  materials: {
+    [key: string]: number
+  }
+  totalCost: number
+}
+
+export interface Absence {
+  id: string
+  employeeName: string
+  date: string
+  reason?: string
+}
+
+export interface EmployeeCycle {
+  id: string
+  employeeName: string
+  startDate: string
+  endDate: string
+  isActive: boolean
+}
+
+export function useFirebaseData() {
+  const { user } = useAuth()
+  const [incomes, setIncomes] = useState<Income[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [productions, setProductions] = useState<Production[]>([])
+  const [absences, setAbsences] = useState<Absence[]>([])
+  const [employeeCycles, setEmployeeCycles] = useState<EmployeeCycle[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Función para obtener la referencia de la colección del usuario
+  // Get user-specific collection path
   const getUserCollection = (collectionName: string) => {
-    return collection(db, 'users', userId, collectionName)
+    if (!user?.email) return null
+    return collection(db, 'users', user.email, collectionName)
   }
 
-  // Suscribirse a cambios en tiempo real
   useEffect(() => {
-    if (!userId) return
+    if (!user?.email) {
+      setLoading(false)
+      return
+    }
 
     const unsubscribes: (() => void)[] = []
 
     try {
-      // Suscribirse a ingresos
-      const incomesQuery = query(
-        getUserCollection('incomes'), 
-        orderBy('createdAt', 'desc')
-      )
-      const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
-        const incomesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as IncomeItem[]
-        setIncomes(incomesData)
-      })
-      unsubscribes.push(unsubIncomes)
+      // Subscribe to incomes
+      const incomesCollection = getUserCollection('incomes')
+      if (incomesCollection) {
+        const incomesQuery = query(incomesCollection, orderBy('date', 'desc'))
+        const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
+          const incomesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Income[]
+          setIncomes(incomesData)
+        })
+        unsubscribes.push(unsubIncomes)
+      }
 
-      // Suscribirse a gastos
-      const expensesQuery = query(
-        getUserCollection('expenses'), 
-        orderBy('createdAt', 'desc')
-      )
-      const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
-        const expensesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as ExpenseItem[]
-        setExpenses(expensesData)
-      })
-      unsubscribes.push(unsubExpenses)
+      // Subscribe to expenses
+      const expensesCollection = getUserCollection('expenses')
+      if (expensesCollection) {
+        const expensesQuery = query(expensesCollection, orderBy('date', 'desc'))
+        const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
+          const expensesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Expense[]
+          setExpenses(expensesData)
+        })
+        unsubscribes.push(unsubExpenses)
+      }
 
-      // Suscribirse a producción
-      const productionsQuery = query(
-        getUserCollection('productions'), 
-        orderBy('createdAt', 'desc')
-      )
-      const unsubProductions = onSnapshot(productionsQuery, (snapshot) => {
-        const productionsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as ProductionItem[]
-        setProductions(productionsData)
-      })
-      unsubscribes.push(unsubProductions)
+      // Subscribe to productions
+      const productionsCollection = getUserCollection('productions')
+      if (productionsCollection) {
+        const productionsQuery = query(productionsCollection, orderBy('date', 'desc'))
+        const unsubProductions = onSnapshot(productionsQuery, (snapshot) => {
+          const productionsData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Production[]
+          setProductions(productionsData)
+        })
+        unsubscribes.push(unsubProductions)
+      }
 
-      // Suscribirse a ausencias
-      const absencesQuery = query(
-        getUserCollection('absences'), 
-        orderBy('createdAt', 'desc')
-      )
-      const unsubAbsences = onSnapshot(absencesQuery, (snapshot) => {
-        const absencesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as AbsenceRecord[]
-        setAbsences(absencesData)
-      })
-      unsubscribes.push(unsubAbsences)
+      // Subscribe to absences
+      const absencesCollection = getUserCollection('absences')
+      if (absencesCollection) {
+        const absencesQuery = query(absencesCollection, orderBy('date', 'desc'))
+        const unsubAbsences = onSnapshot(absencesQuery, (snapshot) => {
+          const absencesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Absence[]
+          setAbsences(absencesData)
+        })
+        unsubscribes.push(unsubAbsences)
+      }
 
-      // Suscribirse a ciclos de empleados
-      const cyclesQuery = getUserCollection('employeeCycles')
-      const unsubCycles = onSnapshot(cyclesQuery, (snapshot) => {
-        const cyclesData = snapshot.docs.map(doc => ({
-          ...doc.data()
-        })) as EmployeeCycleInfo[]
-        setEmployeeCycleInfoList(cyclesData)
-      })
-      unsubscribes.push(unsubCycles)
+      // Subscribe to employee cycles
+      const cyclesCollection = getUserCollection('employeeCycles')
+      if (cyclesCollection) {
+        const cyclesQuery = query(cyclesCollection, orderBy('startDate', 'desc'))
+        const unsubCycles = onSnapshot(cyclesQuery, (snapshot) => {
+          const cyclesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as EmployeeCycle[]
+          setEmployeeCycles(cyclesData)
+        })
+        unsubscribes.push(unsubCycles)
+      }
 
       setLoading(false)
     } catch (err) {
       console.error('Error setting up Firebase listeners:', err)
-      setError('Error al conectar con la base de datos')
+      setError('Error connecting to database')
       setLoading(false)
     }
 
-    // Cleanup: desuscribirse cuando el componente se desmonte
     return () => {
       unsubscribes.forEach(unsubscribe => unsubscribe())
     }
-  }, [userId])
+  }, [user?.email])
 
-  // Funciones para agregar datos
-  const addIncome = async (incomeData: Omit<IncomeItem, 'id' | 'createdAt'>) => {
-    try {
-      const docRef = doc(getUserCollection('incomes'))
-      await setDoc(docRef, {
-        ...incomeData,
-        createdAt: new Date().toISOString()
-      })
-    } catch (err) {
-      console.error('Error adding income:', err)
-      throw new Error('Error al guardar el ingreso')
-    }
+  // Add functions
+  const addIncome = async (income: Omit<Income, 'id'>) => {
+    const collection = getUserCollection('incomes')
+    if (!collection) throw new Error('User not authenticated')
+    
+    await addDoc(collection, {
+      ...income,
+      date: income.date || new Date().toISOString().split('T')[0]
+    })
   }
 
-  const addExpense = async (expenseData: Omit<ExpenseItem, 'id' | 'createdAt'>) => {
-    try {
-      const docRef = doc(getUserCollection('expenses'))
-      await setDoc(docRef, {
-        ...expenseData,
-        createdAt: new Date().toISOString()
-      })
-    } catch (err) {
-      console.error('Error adding expense:', err)
-      throw new Error('Error al guardar el gasto')
-    }
+  const addExpense = async (expense: Omit<Expense, 'id'>) => {
+    const collection = getUserCollection('expenses')
+    if (!collection) throw new Error('User not authenticated')
+    
+    await addDoc(collection, {
+      ...expense,
+      date: expense.date || new Date().toISOString().split('T')[0]
+    })
   }
 
-  const addProduction = async (productionData: Omit<ProductionItem, 'id' | 'createdAt'>) => {
-    try {
-      const docRef = doc(getUserCollection('productions'))
-      await setDoc(docRef, {
-        ...productionData,
-        createdAt: new Date().toISOString()
-      })
-    } catch (err) {
-      console.error('Error adding production:', err)
-      throw new Error('Error al guardar la producción')
-    }
+  const addProduction = async (production: Omit<Production, 'id'>) => {
+    const collection = getUserCollection('productions')
+    if (!collection) throw new Error('User not authenticated')
+    
+    await addDoc(collection, {
+      ...production,
+      date: production.date || new Date().toISOString().split('T')[0]
+    })
   }
 
-  const addAbsence = async (absenceData: Omit<AbsenceRecord, 'id' | 'createdAt'>) => {
-    try {
-      const docRef = doc(getUserCollection('absences'))
-      await setDoc(docRef, {
-        ...absenceData,
-        createdAt: new Date().toISOString()
-      })
-    } catch (err) {
-      console.error('Error adding absence:', err)
-      throw new Error('Error al guardar la ausencia')
-    }
+  const addAbsence = async (absence: Omit<Absence, 'id'>) => {
+    const collection = getUserCollection('absences')
+    if (!collection) throw new Error('User not authenticated')
+    
+    await addDoc(collection, {
+      ...absence,
+      date: absence.date || new Date().toISOString().split('T')[0]
+    })
   }
 
-  const updateEmployeeCycleStart = async (employee: 'César' | 'Yesid', newStartDate: string) => {
-    try {
-      const docRef = doc(getUserCollection('employeeCycles'), employee)
-      await setDoc(docRef, {
-        employee,
-        cycleStartDate: newStartDate
-      }, { merge: true })
-    } catch (err) {
-      console.error('Error updating employee cycle:', err)
-      throw new Error('Error al actualizar el ciclo del empleado')
-    }
+  const addEmployeeCycle = async (cycle: Omit<EmployeeCycle, 'id'>) => {
+    const collection = getUserCollection('employeeCycles')
+    if (!collection) throw new Error('User not authenticated')
+    
+    await addDoc(collection, cycle)
   }
 
-  // Funciones para eliminar datos
+  // Update functions
+  const updateIncome = async (id: string, updates: Partial<Income>) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'incomes', id)
+    await updateDoc(docRef, updates)
+  }
+
+  const updateExpense = async (id: string, updates: Partial<Expense>) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'expenses', id)
+    await updateDoc(docRef, updates)
+  }
+
+  const updateProduction = async (id: string, updates: Partial<Production>) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'productions', id)
+    await updateDoc(docRef, updates)
+  }
+
+  const updateAbsence = async (id: string, updates: Partial<Absence>) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'absences', id)
+    await updateDoc(docRef, updates)
+  }
+
+  const updateEmployeeCycle = async (id: string, updates: Partial<EmployeeCycle>) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'employeeCycles', id)
+    await updateDoc(docRef, updates)
+  }
+
+  // Delete functions
   const deleteIncome = async (id: string) => {
-    try {
-      await deleteDoc(doc(getUserCollection('incomes'), id))
-    } catch (err) {
-      console.error('Error deleting income:', err)
-      throw new Error('Error al eliminar el ingreso')
-    }
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'incomes', id)
+    await deleteDoc(docRef)
   }
 
   const deleteExpense = async (id: string) => {
-    try {
-      await deleteDoc(doc(getUserCollection('expenses'), id))
-    } catch (err) {
-      console.error('Error deleting expense:', err)
-      throw new Error('Error al eliminar el gasto')
-    }
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'expenses', id)
+    await deleteDoc(docRef)
   }
 
   const deleteProduction = async (id: string) => {
-    try {
-      await deleteDoc(doc(getUserCollection('productions'), id))
-    } catch (err) {
-      console.error('Error deleting production:', err)
-      throw new Error('Error al eliminar la producción')
-    }
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'productions', id)
+    await deleteDoc(docRef)
   }
 
   const deleteAbsence = async (id: string) => {
-    try {
-      await deleteDoc(doc(getUserCollection('absences'), id))
-    } catch (err) {
-      console.error('Error deleting absence:', err)
-      throw new Error('Error al eliminar la ausencia')
-    }
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'absences', id)
+    await deleteDoc(docRef)
+  }
+
+  const deleteEmployeeCycle = async (id: string) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const docRef = doc(db, 'users', user.email, 'employeeCycles', id)
+    await deleteDoc(docRef)
   }
 
   return {
-    // Datos
+    // Data
     incomes,
     expenses,
     productions,
     absences,
-    employeeCycleInfoList,
-    
-    // Estado
+    employeeCycles,
     loading,
     error,
     
-    // Funciones para agregar
+    // Add functions
     addIncome,
     addExpense,
     addProduction,
     addAbsence,
-    updateEmployeeCycleStart,
+    addEmployeeCycle,
     
-    // Funciones para eliminar
+    // Update functions
+    updateIncome,
+    updateExpense,
+    updateProduction,
+    updateAbsence,
+    updateEmployeeCycle,
+    
+    // Delete functions
     deleteIncome,
     deleteExpense,
     deleteProduction,
-    deleteAbsence
+    deleteAbsence,
+    deleteEmployeeCycle
   }
 } 

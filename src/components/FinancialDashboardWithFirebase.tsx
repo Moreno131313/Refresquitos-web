@@ -32,17 +32,11 @@ import ExpenseList from './ExpenseList'
 import ProductionList from './ProductionList'
 import FinancialCharts from './FinancialCharts'
 import { DollarSign, Package, Users, BarChart3, Cloud, CloudOff } from 'lucide-react'
+import { LoginScreen } from './LoginScreen'
+import { Badge } from '@/components/ui/badge'
 
 export default function FinancialDashboardWithFirebase() {
-  // Hook de autenticación
-  const { isAuthenticated, isLoading, user, login, logout } = useAuth()
-  
-  // Estados para migración
-  const [showMigration, setShowMigration] = useState(false)
-  const [migrationChecked, setMigrationChecked] = useState(false)
-  
-  // Hook de Firebase (solo si está autenticado)
-  const userId = user?.email || 'default-user'
+  const { user, loading: authLoading, logout } = useAuth()
   const {
     incomes,
     expenses,
@@ -60,376 +54,214 @@ export default function FinancialDashboardWithFirebase() {
     deleteExpense: firebaseDeleteExpense,
     deleteProduction: firebaseDeleteProduction,
     deleteAbsence: firebaseDeleteAbsence
-  } = useFirebaseData(isAuthenticated ? userId : '')
-  
+  } = useFirebaseData()
+
   const [activeTab, setActiveTab] = useState('resumen')
   const { toast } = useToast()
 
-  // Verificar si hay datos locales para migrar
-  useEffect(() => {
-    if (isAuthenticated && !migrationChecked) {
-      const hasLocalData = 
-        localStorage.getItem('refresquitos-incomes') ||
-        localStorage.getItem('refresquitos-expenses') ||
-        localStorage.getItem('refresquitos-productions') ||
-        localStorage.getItem('refresquitos-absences') ||
-        localStorage.getItem('refresquitos-employee-cycles')
-      
-      if (hasLocalData) {
-        setShowMigration(true)
-      }
-      setMigrationChecked(true)
-    }
-  }, [isAuthenticated, migrationChecked])
-
-  // Funciones para manejar ingresos
-  const addIncome = async (incomeData: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => {
-    try {
-      const amount = incomeData.quantity * 1000 // $1000 COP por unidad
-      const newIncome = {
-        ...incomeData,
-        amount,
-        date: incomeData.date,
-        employee: incomeData.employee,
-        quantity: incomeData.quantity,
-        description: incomeData.description || ''
-      }
-      
-      await firebaseAddIncome(newIncome)
-      toast({
-        title: "Ingreso registrado",
-        description: `Se registró una venta de ${incomeData.quantity} unidades por ${formatCurrency(amount)}`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo registrar el ingreso. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const deleteIncome = async (id: string) => {
-    try {
-      await firebaseDeleteIncome(id)
-      toast({
-        title: "Ingreso eliminado",
-        description: "El registro de ingreso ha sido eliminado",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el ingreso. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  // Funciones para manejar gastos
-  const addExpense = async (expenseData: Omit<ExpenseItem, 'id' | 'createdAt'>) => {
-    try {
-      await firebaseAddExpense(expenseData)
-      toast({
-        title: "Gasto registrado",
-        description: `Se registró un gasto de ${formatCurrency(expenseData.amount)}`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo registrar el gasto. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const deleteExpense = async (id: string) => {
-    try {
-      await firebaseDeleteExpense(id)
-      toast({
-        title: "Gasto eliminado",
-        description: "El registro de gasto ha sido eliminado",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el gasto. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  // Funciones para manejar producción
-  const addProduction = async (productionData: Omit<ProductionItem, 'id' | 'createdAt' | 'totalCost' | 'costPerUnit'>) => {
-    try {
-      const materialCostTotal = productionData.materialCosts.reduce((sum, material) => sum + material.cost, 0)
-      const totalCost = materialCostTotal + productionData.directLaborCost + productionData.indirectCosts
-      const costPerUnit = totalCost / productionData.quantity
-
-      const newProduction = {
-        ...productionData,
-        totalCost,
-        costPerUnit
-      }
-      
-      await firebaseAddProduction(newProduction)
-      toast({
-        title: "Lote de producción registrado",
-        description: `Se registró un lote de ${productionData.quantity} unidades con costo total de ${formatCurrency(totalCost)}`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo registrar la producción. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const deleteProduction = async (id: string) => {
-    try {
-      await firebaseDeleteProduction(id)
-      toast({
-        title: "Lote eliminado",
-        description: "El lote de producción ha sido eliminado",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la producción. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  // Funciones para manejar ausencias
-  const addAbsence = async (absenceData: Omit<AbsenceRecord, 'id' | 'createdAt'>) => {
-    try {
-      await firebaseAddAbsence(absenceData)
-      toast({
-        title: "Ausencia registrada",
-        description: `Se registró una ausencia de ${absenceData.employee}`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo registrar la ausencia. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const deleteAbsence = async (id: string) => {
-    try {
-      await firebaseDeleteAbsence(id)
-      toast({
-        title: "Ausencia eliminada",
-        description: "El registro de ausencia ha sido eliminado",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la ausencia. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  // Funciones para manejar ciclos de empleados
-  const handleUpdateEmployeeCycleStart = async (employee: 'César' | 'Yesid', newStartDate: string) => {
-    try {
-      await firebaseUpdateEmployeeCycleStart(employee, newStartDate)
-      toast({
-        title: "Fecha de inicio actualizada",
-        description: `Nueva fecha de inicio de ciclo para ${employee}: ${newStartDate}`
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la fecha del ciclo. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleStartNewCycle = async (employee: 'César' | 'Yesid', newStartDate: string) => {
-    try {
-      await firebaseUpdateEmployeeCycleStart(employee, newStartDate)
-      toast({
-        title: "Nuevo ciclo iniciado",
-        description: `Se inició un nuevo ciclo para ${employee} desde ${newStartDate}`
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo iniciar el nuevo ciclo. Inténtalo de nuevo.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  // Cálculos de resumen financiero
-  const calculateFinancialSummary = () => {
-    const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
-    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-    const netProfit = totalIncome - totalExpenses
-    const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0
-
-    return {
-      totalIncome,
-      totalExpenses,
-      netProfit,
-      profitMargin
-    }
-  }
-
-  // Cálculos de resumen de producción
-  const calculateProductionSummary = () => {
-    const totalProduced = productions.reduce((sum, production) => sum + production.quantity, 0)
-    const totalProductionCost = productions.reduce((sum, production) => sum + production.totalCost, 0)
-    const averageCostPerUnit = totalProduced > 0 ? totalProductionCost / totalProduced : 0
-    const currentInventory = totalProduced - incomes.reduce((sum, income) => sum + income.quantity, 0)
-
-    return {
-      totalProduced,
-      totalProductionCost,
-      averageCostPerUnit,
-      currentInventory
-    }
-  }
-
-  // Mostrar pantalla de carga durante autenticación
-  if (isLoading) {
-    return <LoadingScreen />
-  }
-
-  // Mostrar formulario de login si no está autenticado
-  if (!isAuthenticated) {
-    return <LoginForm onLogin={login} />
-  }
-
-  // Mostrar migración de datos si es necesario
-  if (showMigration) {
+  // Show loading while checking authentication
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="max-w-2xl mx-auto pt-20">
-          <DataMigration 
-            userId={userId}
-            onMigrationComplete={() => setShowMigration(false)}
-          />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     )
   }
 
-  // Mostrar pantalla de carga de Firebase
+  // Show login screen if not authenticated
+  if (!user) {
+    return <LoginScreen />
+  }
+
+  // Show data migration if user has local data
+  const hasLocalData = () => {
+    try {
+      const localIncomes = localStorage.getItem('refresquitos-incomes')
+      const localExpenses = localStorage.getItem('refresquitos-expenses')
+      const localProductions = localStorage.getItem('refresquitos-productions')
+      const localAbsences = localStorage.getItem('refresquitos-absences')
+      const localCycles = localStorage.getItem('refresquitos-employee-cycles')
+      
+      return !!(localIncomes || localExpenses || localProductions || localAbsences || localCycles)
+    } catch {
+      return false
+    }
+  }
+
+  if (hasLocalData()) {
+    return <DataMigration />
+  }
+
+  // Calculate totals
+  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+  const netProfit = totalIncome - totalExpenses
+  const totalProduced = productions.reduce((sum, prod) => sum + prod.quantity, 0)
+  const currentInventory = Math.max(0, totalProduced - incomes.length) // Assuming 1 income = 1 unit sold
+
   if (firebaseLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <AppHeader onLogout={logout} />
-        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-          <LoadingScreen />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando datos...</p>
         </div>
       </div>
     )
   }
 
-  // Mostrar error de Firebase
   if (firebaseError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <AppHeader onLogout={logout} />
-        <div className="container mx-auto px-4 py-8">
-          <Card className="max-w-md mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-600">
-                <CloudOff className="h-5 w-5" />
-                Error de Conexión
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                No se pudo conectar con la base de datos en la nube. Verifica tu conexión a internet.
-              </p>
-              <Button onClick={() => window.location.reload()} className="w-full">
-                Reintentar
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <p className="text-xl mb-4">Error: {firebaseError}</p>
+          <Button onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
         </div>
       </div>
     )
   }
 
-  const financialSummary = calculateFinancialSummary()
-  const productionSummary = calculateProductionSummary()
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <AppHeader onLogout={logout} />
-      
-      {/* Indicador de estado de la nube */}
-      <div className="container mx-auto px-4 py-2">
-        <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-          <Cloud className="h-4 w-4" />
-          <span>Sincronizado con la nube</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with user info and logout */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">🥤 Refresquitos Manager</h1>
+              <p className="text-sm text-gray-600">Bienvenido, {user.displayName || user.email}</p>
+            </div>
+            <Button 
+              onClick={logout}
+              variant="outline"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5">
-            <TabsTrigger value="resumen" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Resumen</span>
-              <span className="sm:hidden">Res</span>
-            </TabsTrigger>
-            <TabsTrigger value="ingresos" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">Ingresos</span>
-              <span className="sm:hidden">Ing</span>
-            </TabsTrigger>
-            <TabsTrigger value="gastos" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">Gastos</span>
-              <span className="sm:hidden">Gas</span>
-            </TabsTrigger>
-            <TabsTrigger value="produccion" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Producción</span>
-              <span className="sm:hidden">Prod</span>
-            </TabsTrigger>
-            <TabsTrigger value="empleados" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Empleados</span>
-              <span className="sm:hidden">Emp</span>
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="resumen">📊 Res</TabsTrigger>
+            <TabsTrigger value="ingresos">💰 Ing</TabsTrigger>
+            <TabsTrigger value="gastos">💸 Gas</TabsTrigger>
+            <TabsTrigger value="produccion">🏭 Prod</TabsTrigger>
+            <TabsTrigger value="empleados">👥 Emp</TabsTrigger>
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <FinancialSummaryCard summary={financialSummary} />
-              <ProductionSummaryCard summary={productionSummary} />
-            </div>
-            <FinancialCharts 
-              incomes={incomes}
-              expenses={expenses}
-              productions={productions}
-            />
+            {/* Financial Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  💰 Resumen Financiero
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Ingresos Totales</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    ${totalIncome.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Gastos Totales</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    ${totalExpenses.toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Utilidad Neta</p>
+                  <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${netProfit.toLocaleString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Production Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🏭 Resumen de Producción
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Total Producido</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {totalProduced} unidades
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Inventario Actual</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {currentInventory} unidades
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Costo Promedio por Unidad</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    ${totalProduced > 0 ? Math.round(productions.reduce((sum, prod) => sum + prod.totalCost, 0) / totalProduced) : 0}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">
-            <IncomeForm onAddIncome={addIncome} />
-            <IncomeList incomes={incomes} onDeleteIncome={deleteIncome} />
+            <Card>
+              <CardHeader>
+                <CardTitle>💰 Gestión de Ingresos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => addIncome({ amount: 1000, date: new Date().toISOString().split('T')[0], description: 'Venta' })}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    + Agregar Venta ($1000)
+                  </Button>
+                </div>
+                
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {incomes.map((income) => (
+                    <div key={income.id} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">${income.amount.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">{income.date}</p>
+                        {income.description && <p className="text-sm text-gray-500">{income.description}</p>}
+                      </div>
+                      <Button 
+                        onClick={() => firebaseDeleteIncome(income.id)}
+                        variant="destructive" 
+                        size="sm"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="gastos" className="space-y-6">
-            <ExpenseForm onAddExpense={addExpense} />
-            <ExpenseList expenses={expenses} onDeleteExpense={deleteExpense} />
+            <ExpenseForm onAddExpense={firebaseAddExpense} />
+            <ExpenseList expenses={expenses} onDeleteExpense={firebaseDeleteExpense} />
           </TabsContent>
 
           <TabsContent value="produccion" className="space-y-6">
-            <ProductionForm onAddProduction={addProduction} />
-            <ProductionList productions={productions} onDeleteProduction={deleteProduction} />
+            <ProductionForm onAddProduction={firebaseAddProduction} />
+            <ProductionList productions={productions} onDeleteProduction={firebaseDeleteProduction} />
           </TabsContent>
 
           <TabsContent value="empleados" className="space-y-6">
@@ -437,10 +269,9 @@ export default function FinancialDashboardWithFirebase() {
               incomes={incomes}
               absences={absences}
               employeeCycleInfoList={employeeCycleInfoList}
-              onAddAbsence={addAbsence}
-              onDeleteAbsence={deleteAbsence}
-              onUpdateEmployeeCycleStart={handleUpdateEmployeeCycleStart}
-              onStartNewEmployeeCycle={handleStartNewCycle}
+              onAddAbsence={firebaseAddAbsence}
+              onDeleteAbsence={firebaseDeleteAbsence}
+              onUpdateEmployeeCycleStart={firebaseUpdateEmployeeCycleStart}
             />
           </TabsContent>
         </Tabs>
