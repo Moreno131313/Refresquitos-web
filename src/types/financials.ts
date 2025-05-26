@@ -84,26 +84,27 @@ export interface ProductionSummary {
   currentInventory: number;
 }
 
+// Lista actualizada con los materiales reales de producción de refrescos
 export const MATERIAL_NAMES = [
-  'Azúcar',
-  'Agua',
-  'Colorante',
-  'Saborizante',
-  'Conservante',
-  'Acidulante',
-  'Edulcorante',
-  'Vitaminas',
-  'Minerales',
-  'Envase plástico',
-  'Tapa',
-  'Etiqueta',
-  'Pegamento',
-  'Caja de cartón',
-  'Plástico de empaque',
-  'Gas para carbonatación',
-  'Limpiador industrial',
-  'Desinfectante',
-  'Combustible'
+  'Leche x cantina (40litros)',
+  'Leche x cantina (20 litros)',
+  'Azucar x BULTO',
+  'Azucar x kilo',
+  'Maracuya',
+  'Mora',
+  'Esencia vainilla blanca *Galon',
+  'Esencia de Chicle*500ml',
+  'Esencia de Arequipe*500ml',
+  'Esencia de Vainilla blanca levapan *500ml',
+  'Esencia de Leche condensada *500ml',
+  'Galletas oreo *12und',
+  'CMC *500Gr',
+  'Bolsas para empacar refrescos grandes',
+  'Bolsa para empacar refrescos pequeños',
+  'Colante azul',
+  'Colorante pardo C11',
+  'Bolsas para Fabricar refrescos grandes',
+  'Bolsas para fabricar refrescos pequeños'
 ] as const;
 
 export type MaterialName = typeof MATERIAL_NAMES[number]; 
