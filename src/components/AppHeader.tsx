@@ -3,6 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Droplets, TrendingUp, LogOut, User } from 'lucide-react'
+import Image from 'next/image'
 
 interface AppHeaderProps {
   userEmail?: string
@@ -18,10 +19,12 @@ export default function AppHeader({ userEmail, userName, onLogout }: AppHeaderPr
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           {/* Logo y título */}
           <div className="flex items-center space-x-3 md:space-x-4">
-            <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center flex-shrink-0">
-              <img 
+            <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center flex-shrink-0 relative">
+              <Image 
                 src="/logo1.png" 
                 alt="Refresquitos Logo" 
+                width={64}
+                height={64}
                 className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full border-2 border-white/30 shadow-md"
                 style={{
                   clipPath: 'circle(50% at 50% 50%)',
@@ -34,8 +37,9 @@ export default function AppHeader({ userEmail, userName, onLogout }: AppHeaderPr
                   const fallback = target.nextElementSibling as HTMLElement;
                   if (fallback) fallback.style.display = 'flex';
                 }}
+                priority
               />
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30" style={{ display: 'none' }}>
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30 absolute inset-0" style={{ display: 'none' }}>
                 <Droplets className="h-6 w-6 md:h-8 md:w-8 text-white" />
               </div>
             </div>

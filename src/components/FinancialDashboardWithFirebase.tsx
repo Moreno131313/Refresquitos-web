@@ -18,7 +18,7 @@ import { formatCurrency, generateId, getCurrentDate } from '@/lib/utils'
 import AppHeader from './AppHeader'
 import LoginForm from './LoginForm'
 import LoadingScreen from './LoadingScreen'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from './AuthProvider'
 import { useFirebaseData } from '@/hooks/useFirebaseData'
 import DataMigration from './DataMigration'
 import IncomeForm from './IncomeForm'
@@ -36,12 +36,13 @@ import { LoginScreen } from './LoginScreen'
 import { Badge } from '@/components/ui/badge'
 
 export default function FinancialDashboardWithFirebase() {
-  const { user, loading: authLoading, logout } = useAuth()
+  const { user, isLoading: authLoading, logout } = useAuth()
   const {
     incomes,
     expenses,
     productions,
     absences,
+    employeeCycles,
     employeeCycleInfoList,
     loading: firebaseLoading,
     error: firebaseError,
@@ -57,10 +58,48 @@ export default function FinancialDashboardWithFirebase() {
   } = useFirebaseData()
 
   const [activeTab, setActiveTab] = useState('resumen')
+  const [showMigration, setShowMigration] = useState(false)
   const { toast } = useToast()
+
+  // Debug logging
+  console.log('🔍 FinancialDashboard: Estado de renderizado:', {
+    user,
+    authLoading,
+    firebaseLoading,
+    firebaseError,
+    showMigration,
+    userExists: !!user,
+    userEmail: user?.email,
+    userName: user?.name
+  })
+
+  // Check for local data on mount
+  useEffect(() => {
+    const hasLocalData = () => {
+      try {
+        const localIncomes = localStorage.getItem('refresquitos-incomes')
+        const localExpenses = localStorage.getItem('refresquitos-expenses')
+        const localProductions = localStorage.getItem('refresquitos-productions')
+        const localAbsences = localStorage.getItem('refresquitos-absences')
+        const localCycles = localStorage.getItem('refresquitos-employee-cycles')
+        
+        return !!(localIncomes || localExpenses || localProductions || localAbsences || localCycles)
+      } catch {
+        return false
+      }
+    }
+
+    if (user && hasLocalData()) {
+      console.log('📦 FinancialDashboard: Datos locales encontrados, mostrando migración')
+      setShowMigration(true)
+    } else {
+      console.log('📦 FinancialDashboard: No hay datos locales o no hay usuario')
+    }
+  }, [user])
 
   // Show loading while checking authentication
   if (authLoading) {
+    console.log('⏳ FinancialDashboard: Mostrando loading de autenticación')
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -73,34 +112,114 @@ export default function FinancialDashboardWithFirebase() {
 
   // Show login screen if not authenticated
   if (!user) {
+    console.log('🔐 FinancialDashboard: Usuario no autenticado, mostrando LoginScreen')
     return <LoginScreen />
   }
 
   // Show data migration if user has local data
-  const hasLocalData = () => {
-    try {
-      const localIncomes = localStorage.getItem('refresquitos-incomes')
-      const localExpenses = localStorage.getItem('refresquitos-expenses')
-      const localProductions = localStorage.getItem('refresquitos-productions')
-      const localAbsences = localStorage.getItem('refresquitos-absences')
-      const localCycles = localStorage.getItem('refresquitos-employee-cycles')
-      
-      return !!(localIncomes || localExpenses || localProductions || localAbsences || localCycles)
-    } catch {
-      return false
-    }
+  if (showMigration) {
+    console.log('📦 FinancialDashboard: Mostrando migración de datos')
+    return (
+      <DataMigration 
+        userId={user.email || ''}
+        onMigrationComplete={() => setShowMigration(false)}
+      />
+    )
   }
 
-  if (hasLocalData()) {
-    return <DataMigration />
+  console.log('🎉 FinancialDashboard: Renderizando dashboard principal')
+
+  // Wrapper functions to handle form submissions
+  const handleAddIncome = (incomeData: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => {
+    firebaseAddIncome(incomeData).catch(error => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el ingreso",
+        variant: "destructive"
+      })
+    })
   }
 
-  // Calculate totals
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-  const netProfit = totalIncome - totalExpenses
-  const totalProduced = productions.reduce((sum, prod) => sum + prod.quantity, 0)
-  const currentInventory = Math.max(0, totalProduced - incomes.length) // Assuming 1 income = 1 unit sold
+  const handleAddExpense = (expenseData: Omit<ExpenseItem, 'id' | 'createdAt'>) => {
+    firebaseAddExpense(expenseData).catch(error => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el gasto",
+        variant: "destructive"
+      })
+    })
+  }
+
+  const handleAddProduction = (productionData: Omit<ProductionItem, 'id' | 'createdAt' | 'totalCost' | 'costPerUnit'>) => {
+    firebaseAddProduction(productionData).catch(error => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar la producción",
+        variant: "destructive"
+      })
+    })
+  }
+
+  const handleAddAbsence = (absenceData: Omit<AbsenceRecord, 'id' | 'createdAt'>) => {
+    firebaseAddAbsence(absenceData).catch(error => {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar la ausencia",
+        variant: "destructive"
+      })
+    })
+  }
+
+  const handleUpdateEmployeeCycleStart = (employee: 'César' | 'Yesid', newStartDate: string) => {
+    firebaseUpdateEmployeeCycleStart(employee, newStartDate).catch(error => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el ciclo del empleado",
+        variant: "destructive"
+      })
+    })
+  }
+
+  const handleStartNewCycle = (employee: 'César' | 'Yesid', newStartDate: string) => {
+    handleUpdateEmployeeCycleStart(employee, newStartDate)
+    toast({
+      title: "Nuevo ciclo iniciado",
+      description: `Nuevo ciclo de evaluación iniciado para ${employee}`
+    })
+  }
+
+  // Calculate financial summary
+  const financialSummary: FinancialSummary = {
+    totalIncome: incomes.reduce((sum, income) => sum + income.amount, 0),
+    totalExpenses: expenses.reduce((sum, expense) => sum + expense.amount, 0),
+    netProfit: 0,
+    profitMargin: 0,
+    tithe: 0,
+    savings: 0,
+    available: 0,
+  }
+
+  financialSummary.netProfit = financialSummary.totalIncome - financialSummary.totalExpenses
+  financialSummary.profitMargin = financialSummary.totalIncome > 0 
+    ? (financialSummary.netProfit / financialSummary.totalIncome) * 100 
+    : 0
+  financialSummary.tithe = financialSummary.netProfit * 0.1
+  financialSummary.savings = financialSummary.netProfit * 0.2
+  financialSummary.available = financialSummary.netProfit - financialSummary.tithe - financialSummary.savings
+
+  // Calculate production summary
+  const productionSummary: ProductionSummary = {
+    totalProduced: productions.reduce((sum, prod) => sum + prod.quantity, 0),
+    totalProductionCost: productions.reduce((sum, prod) => sum + prod.totalCost, 0),
+    averageCostPerUnit: 0,
+    currentInventory: 0,
+  }
+
+  const totalSold = incomes.reduce((sum, income) => sum + income.quantity, 0)
+  productionSummary.currentInventory = productionSummary.totalProduced - totalSold
+  productionSummary.averageCostPerUnit = productionSummary.totalProduced > 0 
+    ? productionSummary.totalProductionCost / productionSummary.totalProduced 
+    : 0
 
   if (firebaseLoading) {
     return (
@@ -127,151 +246,105 @@ export default function FinancialDashboardWithFirebase() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header with user info and logout */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">🥤 Refresquitos Manager</h1>
-              <p className="text-sm text-gray-600">Bienvenido, {user.displayName || user.email}</p>
-            </div>
-            <Button 
-              onClick={logout}
-              variant="outline"
-              className="text-gray-600 hover:text-gray-900"
-            >
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="resumen">📊 Res</TabsTrigger>
-            <TabsTrigger value="ingresos">💰 Ing</TabsTrigger>
-            <TabsTrigger value="gastos">💸 Gas</TabsTrigger>
-            <TabsTrigger value="produccion">🏭 Prod</TabsTrigger>
-            <TabsTrigger value="empleados">👥 Emp</TabsTrigger>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      <AppHeader 
+        userEmail={user?.email}
+        userName={user?.name || user?.email}
+        onLogout={logout}
+      />
+      
+      <div className="container mx-auto p-3 md:p-4 space-y-4 md:space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+            <TabsTrigger value="resumen" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Resumen</span>
+              <span className="sm:hidden">Res</span>
+            </TabsTrigger>
+            <TabsTrigger value="ingresos" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Ingresos</span>
+              <span className="sm:hidden">Ing</span>
+            </TabsTrigger>
+            <TabsTrigger value="gastos" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Gastos</span>
+              <span className="sm:hidden">Gas</span>
+            </TabsTrigger>
+            <TabsTrigger value="produccion" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Package className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Producción</span>
+              <span className="sm:hidden">Prod</span>
+            </TabsTrigger>
+            <TabsTrigger value="empleados" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Users className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Empleados</span>
+              <span className="sm:hidden">Emp</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
-            {/* Financial Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  💰 Resumen Financiero
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Ingresos Totales</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    ${totalIncome.toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Gastos Totales</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    ${totalExpenses.toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Utilidad Neta</p>
-                  <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${netProfit.toLocaleString()}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Production Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  🏭 Resumen de Producción
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Total Producido</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {totalProduced} unidades
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Inventario Actual</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {currentInventory} unidades
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Costo Promedio por Unidad</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    ${totalProduced > 0 ? Math.round(productions.reduce((sum, prod) => sum + prod.totalCost, 0) / totalProduced) : 0}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FinancialSummaryCard summary={financialSummary} />
+              <ProductionSummaryCard summary={productionSummary} />
+            </div>
+            <FinancialCharts incomes={incomes} expenses={expenses} />
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>💰 Gestión de Ingresos</CardTitle>
+                <CardTitle>Registrar Nuevo Ingreso</CardTitle>
+                <CardDescription>
+                  Registra las ventas de refrescos. El precio por unidad es de $1,000 COP.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => addIncome({ amount: 1000, date: new Date().toISOString().split('T')[0], description: 'Venta' })}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    + Agregar Venta ($1000)
-                  </Button>
-                </div>
-                
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {incomes.map((income) => (
-                    <div key={income.id} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                      <div>
-                        <p className="font-medium">${income.amount.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">{income.date}</p>
-                        {income.description && <p className="text-sm text-gray-500">{income.description}</p>}
-                      </div>
-                      <Button 
-                        onClick={() => firebaseDeleteIncome(income.id)}
-                        variant="destructive" 
-                        size="sm"
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+              <CardContent>
+                <IncomeForm onSubmit={handleAddIncome} />
               </CardContent>
             </Card>
+            <IncomeList incomes={incomes} onDelete={firebaseDeleteIncome} />
           </TabsContent>
 
           <TabsContent value="gastos" className="space-y-6">
-            <ExpenseForm onAddExpense={firebaseAddExpense} />
-            <ExpenseList expenses={expenses} onDeleteExpense={firebaseDeleteExpense} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Registrar Nuevo Gasto</CardTitle>
+                <CardDescription>
+                  Registra todos los gastos del negocio organizados por categorías.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ExpenseForm onSubmit={handleAddExpense} />
+              </CardContent>
+            </Card>
+            <ExpenseList expenses={expenses} onDelete={firebaseDeleteExpense} />
           </TabsContent>
 
           <TabsContent value="produccion" className="space-y-6">
-            <ProductionForm onAddProduction={firebaseAddProduction} />
-            <ProductionList productions={productions} onDeleteProduction={firebaseDeleteProduction} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Registrar Lote de Producción</CardTitle>
+                <CardDescription>
+                  Registra cada lote de producción con todos los costos asociados.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProductionForm onSubmit={handleAddProduction} />
+              </CardContent>
+            </Card>
+            <ProductionList productions={productions} onDelete={firebaseDeleteProduction} />
           </TabsContent>
 
           <TabsContent value="empleados" className="space-y-6">
-            <EmployeeDashboard
+            <EmployeeDashboard 
               incomes={incomes}
               absences={absences}
               employeeCycleInfoList={employeeCycleInfoList}
-              onAddAbsence={firebaseAddAbsence}
+              onAddAbsence={handleAddAbsence}
               onDeleteAbsence={firebaseDeleteAbsence}
-              onUpdateEmployeeCycleStart={firebaseUpdateEmployeeCycleStart}
+              onUpdateEmployeeCycleStart={handleUpdateEmployeeCycleStart}
+              onStartNewCycle={handleStartNewCycle}
             />
           </TabsContent>
         </Tabs>

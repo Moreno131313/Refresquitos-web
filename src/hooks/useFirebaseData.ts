@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   collection, 
   addDoc, 
@@ -12,55 +12,21 @@ import {
   orderBy,
   Timestamp 
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, isFirebaseAvailable } from '@/lib/firebase'
 import { useAuth } from '@/components/AuthProvider'
 import { 
-  IncomeItem, 
-  ExpenseItem, 
-  ProductionItem, 
-  AbsenceRecord, 
-  EmployeeCycleInfo 
-} from '@/types/financials'
-
-export interface Income {
-  id: string
-  amount: number
-  date: string
-  description?: string
-}
-
-export interface Expense {
-  id: string
-  amount: number
-  date: string
-  description: string
-  category?: string
-}
-
-export interface Production {
-  id: string
-  date: string
-  quantity: number
-  materials: {
-    [key: string]: number
-  }
-  totalCost: number
-}
-
-export interface Absence {
-  id: string
-  employeeName: string
-  date: string
-  reason?: string
-}
-
-export interface EmployeeCycle {
-  id: string
-  employeeName: string
-  startDate: string
-  endDate: string
-  isActive: boolean
-}
+  Income,
+  Expense,
+  Production,
+  Absence,
+  EmployeeCycle,
+  EmployeeCycleInfo,
+  IncomeFormData,
+  ExpenseFormData,
+  ProductionFormData,
+  AbsenceFormData,
+  EmployeeCycleFormData
+} from '@/types/unified'
 
 export function useFirebaseData() {
   const { user } = useAuth()
@@ -72,14 +38,28 @@ export function useFirebaseData() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Get user-specific collection path
-  const getUserCollection = (collectionName: string) => {
-    if (!user?.email) return null
+  // Computed property for employeeCycleInfoList
+  const employeeCycleInfoList: EmployeeCycleInfo[] = employeeCycles
+    .filter(cycle => cycle.isActive)
+    .map(cycle => ({
+      employee: cycle.employee,
+      cycleStartDate: cycle.startDate
+    }))
+
+  // Get user-specific collection path - memoized to avoid dependency issues
+  const getUserCollection = useCallback((collectionName: string) => {
+    if (!user?.email || !isFirebaseAvailable()) return null
     return collection(db, 'users', user.email, collectionName)
-  }
+  }, [user?.email])
 
   useEffect(() => {
     if (!user?.email) {
+      setLoading(false)
+      return
+    }
+
+    if (!isFirebaseAvailable()) {
+      console.log('Firebase not available, using localStorage fallback')
       setLoading(false)
       return
     }
@@ -88,74 +68,69 @@ export function useFirebaseData() {
 
     try {
       // Subscribe to incomes
-      const incomesCollection = getUserCollection('incomes')
-      if (incomesCollection) {
-        const incomesQuery = query(incomesCollection, orderBy('date', 'desc'))
-        const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
-          const incomesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Income[]
-          setIncomes(incomesData)
-        })
-        unsubscribes.push(unsubIncomes)
-      }
+      const incomesCollection = collection(db, 'users', user.email, 'incomes')
+      const incomesQuery = query(incomesCollection, orderBy('date', 'desc'))
+      const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
+        const incomesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt || new Date().toISOString()
+        })) as Income[]
+        setIncomes(incomesData)
+      })
+      unsubscribes.push(unsubIncomes)
 
       // Subscribe to expenses
-      const expensesCollection = getUserCollection('expenses')
-      if (expensesCollection) {
-        const expensesQuery = query(expensesCollection, orderBy('date', 'desc'))
-        const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
-          const expensesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Expense[]
-          setExpenses(expensesData)
-        })
-        unsubscribes.push(unsubExpenses)
-      }
+      const expensesCollection = collection(db, 'users', user.email, 'expenses')
+      const expensesQuery = query(expensesCollection, orderBy('date', 'desc'))
+      const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
+        const expensesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt || new Date().toISOString()
+        })) as Expense[]
+        setExpenses(expensesData)
+      })
+      unsubscribes.push(unsubExpenses)
 
       // Subscribe to productions
-      const productionsCollection = getUserCollection('productions')
-      if (productionsCollection) {
-        const productionsQuery = query(productionsCollection, orderBy('date', 'desc'))
-        const unsubProductions = onSnapshot(productionsQuery, (snapshot) => {
-          const productionsData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Production[]
-          setProductions(productionsData)
-        })
-        unsubscribes.push(unsubProductions)
-      }
+      const productionsCollection = collection(db, 'users', user.email, 'productions')
+      const productionsQuery = query(productionsCollection, orderBy('date', 'desc'))
+      const unsubProductions = onSnapshot(productionsQuery, (snapshot) => {
+        const productionsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt || new Date().toISOString()
+        })) as Production[]
+        setProductions(productionsData)
+      })
+      unsubscribes.push(unsubProductions)
 
       // Subscribe to absences
-      const absencesCollection = getUserCollection('absences')
-      if (absencesCollection) {
-        const absencesQuery = query(absencesCollection, orderBy('date', 'desc'))
-        const unsubAbsences = onSnapshot(absencesQuery, (snapshot) => {
-          const absencesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Absence[]
-          setAbsences(absencesData)
-        })
-        unsubscribes.push(unsubAbsences)
-      }
+      const absencesCollection = collection(db, 'users', user.email, 'absences')
+      const absencesQuery = query(absencesCollection, orderBy('date', 'desc'))
+      const unsubAbsences = onSnapshot(absencesQuery, (snapshot) => {
+        const absencesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt || new Date().toISOString()
+        })) as Absence[]
+        setAbsences(absencesData)
+      })
+      unsubscribes.push(unsubAbsences)
 
       // Subscribe to employee cycles
-      const cyclesCollection = getUserCollection('employeeCycles')
-      if (cyclesCollection) {
-        const cyclesQuery = query(cyclesCollection, orderBy('startDate', 'desc'))
-        const unsubCycles = onSnapshot(cyclesQuery, (snapshot) => {
-          const cyclesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as EmployeeCycle[]
-          setEmployeeCycles(cyclesData)
-        })
-        unsubscribes.push(unsubCycles)
-      }
+      const cyclesCollection = collection(db, 'users', user.email, 'employeeCycles')
+      const cyclesQuery = query(cyclesCollection, orderBy('startDate', 'desc'))
+      const unsubCycles = onSnapshot(cyclesQuery, (snapshot) => {
+        const cyclesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt || new Date().toISOString()
+        })) as EmployeeCycle[]
+        setEmployeeCycles(cyclesData)
+      })
+      unsubscribes.push(unsubCycles)
 
       setLoading(false)
     } catch (err) {
@@ -170,140 +145,146 @@ export function useFirebaseData() {
   }, [user?.email])
 
   // Add functions
-  const addIncome = async (income: Omit<Income, 'id'>) => {
+  const addIncome = async (incomeData: IncomeFormData) => {
     const collection = getUserCollection('incomes')
     if (!collection) throw new Error('User not authenticated')
     
-    await addDoc(collection, {
-      ...income,
-      date: income.date || new Date().toISOString().split('T')[0]
-    })
+    const amount = incomeData.quantity * 1000 // $1000 COP por unidad
+    const income: Omit<Income, 'id'> = {
+      ...incomeData,
+      amount,
+      createdAt: new Date().toISOString(),
+      date: incomeData.date || new Date().toISOString().split('T')[0]
+    }
+    
+    await addDoc(collection, income)
   }
 
-  const addExpense = async (expense: Omit<Expense, 'id'>) => {
+  const addExpense = async (expenseData: ExpenseFormData) => {
     const collection = getUserCollection('expenses')
     if (!collection) throw new Error('User not authenticated')
     
-    await addDoc(collection, {
-      ...expense,
-      date: expense.date || new Date().toISOString().split('T')[0]
-    })
+    const expense: Omit<Expense, 'id'> = {
+      ...expenseData,
+      createdAt: new Date().toISOString(),
+      date: expenseData.date || new Date().toISOString().split('T')[0]
+    }
+    
+    await addDoc(collection, expense)
   }
 
-  const addProduction = async (production: Omit<Production, 'id'>) => {
+  const addProduction = async (productionData: ProductionFormData) => {
     const collection = getUserCollection('productions')
     if (!collection) throw new Error('User not authenticated')
     
-    await addDoc(collection, {
-      ...production,
-      date: production.date || new Date().toISOString().split('T')[0]
-    })
+    const materialCostTotal = productionData.materialCosts.reduce((sum, material) => sum + material.cost, 0)
+    const totalCost = materialCostTotal + productionData.directLaborCost + productionData.indirectCosts
+    const costPerUnit = totalCost / productionData.quantity
+
+    const production: Omit<Production, 'id'> = {
+      ...productionData,
+      totalCost,
+      costPerUnit,
+      createdAt: new Date().toISOString(),
+      date: productionData.date || new Date().toISOString().split('T')[0]
+    }
+    
+    await addDoc(collection, production)
   }
 
-  const addAbsence = async (absence: Omit<Absence, 'id'>) => {
+  const addAbsence = async (absenceData: AbsenceFormData) => {
     const collection = getUserCollection('absences')
     if (!collection) throw new Error('User not authenticated')
     
-    await addDoc(collection, {
-      ...absence,
-      date: absence.date || new Date().toISOString().split('T')[0]
-    })
+    const absence: Omit<Absence, 'id'> = {
+      ...absenceData,
+      createdAt: new Date().toISOString(),
+      date: absenceData.date || new Date().toISOString().split('T')[0]
+    }
+    
+    await addDoc(collection, absence)
   }
 
-  const addEmployeeCycle = async (cycle: Omit<EmployeeCycle, 'id'>) => {
+  const addEmployeeCycle = async (cycleData: EmployeeCycleFormData) => {
     const collection = getUserCollection('employeeCycles')
     if (!collection) throw new Error('User not authenticated')
+    
+    const cycle: Omit<EmployeeCycle, 'id'> = {
+      ...cycleData,
+      createdAt: new Date().toISOString()
+    }
     
     await addDoc(collection, cycle)
   }
 
   // Update functions
-  const updateIncome = async (id: string, updates: Partial<Income>) => {
-    if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'incomes', id)
-    await updateDoc(docRef, updates)
-  }
-
-  const updateExpense = async (id: string, updates: Partial<Expense>) => {
-    if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'expenses', id)
-    await updateDoc(docRef, updates)
-  }
-
-  const updateProduction = async (id: string, updates: Partial<Production>) => {
-    if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'productions', id)
-    await updateDoc(docRef, updates)
-  }
-
-  const updateAbsence = async (id: string, updates: Partial<Absence>) => {
-    if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'absences', id)
-    await updateDoc(docRef, updates)
-  }
-
-  const updateEmployeeCycle = async (id: string, updates: Partial<EmployeeCycle>) => {
-    if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'employeeCycles', id)
-    await updateDoc(docRef, updates)
+  const updateEmployeeCycleStart = async (employee: 'César' | 'Yesid', newStartDate: string) => {
+    const activeCycle = employeeCycles.find(cycle => 
+      cycle.employee === employee && cycle.isActive
+    )
+    
+    if (activeCycle) {
+      const cycleDoc = doc(db, 'users', user?.email || '', 'employeeCycles', activeCycle.id)
+      await updateDoc(cycleDoc, {
+        startDate: newStartDate,
+        updatedAt: new Date().toISOString()
+      })
+    } else {
+      // Create new cycle if none exists
+      await addEmployeeCycle({
+        employee,
+        startDate: newStartDate,
+        isActive: true
+      })
+    }
   }
 
   // Delete functions
   const deleteIncome = async (id: string) => {
     if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'incomes', id)
-    await deleteDoc(docRef)
+    const incomeDoc = doc(db, 'users', user.email, 'incomes', id)
+    await deleteDoc(incomeDoc)
   }
 
   const deleteExpense = async (id: string) => {
     if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'expenses', id)
-    await deleteDoc(docRef)
+    const expenseDoc = doc(db, 'users', user.email, 'expenses', id)
+    await deleteDoc(expenseDoc)
   }
 
   const deleteProduction = async (id: string) => {
     if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'productions', id)
-    await deleteDoc(docRef)
+    const productionDoc = doc(db, 'users', user.email, 'productions', id)
+    await deleteDoc(productionDoc)
   }
 
   const deleteAbsence = async (id: string) => {
     if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'absences', id)
-    await deleteDoc(docRef)
+    const absenceDoc = doc(db, 'users', user.email, 'absences', id)
+    await deleteDoc(absenceDoc)
   }
 
   const deleteEmployeeCycle = async (id: string) => {
     if (!user?.email) throw new Error('User not authenticated')
-    const docRef = doc(db, 'users', user.email, 'employeeCycles', id)
-    await deleteDoc(docRef)
+    const cycleDoc = doc(db, 'users', user.email, 'employeeCycles', id)
+    await deleteDoc(cycleDoc)
   }
 
   return {
-    // Data
     incomes,
     expenses,
     productions,
     absences,
     employeeCycles,
+    employeeCycleInfoList,
     loading,
     error,
-    
-    // Add functions
     addIncome,
     addExpense,
     addProduction,
     addAbsence,
     addEmployeeCycle,
-    
-    // Update functions
-    updateIncome,
-    updateExpense,
-    updateProduction,
-    updateAbsence,
-    updateEmployeeCycle,
-    
-    // Delete functions
+    updateEmployeeCycleStart,
     deleteIncome,
     deleteExpense,
     deleteProduction,

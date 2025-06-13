@@ -18,7 +18,7 @@ import { formatCurrency, generateId, getCurrentDate } from '@/lib/utils'
 import AppHeader from './AppHeader'
 import LoginForm from './LoginForm'
 import LoadingScreen from './LoadingScreen'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from './AuthProvider'
 import IncomeForm from './IncomeForm'
 import ExpenseForm from './ExpenseForm'
 import ProductionForm from './ProductionForm'
@@ -224,12 +224,16 @@ export default function FinancialDashboardClient() {
     totalIncome: incomes.reduce((sum, income) => sum + income.amount, 0),
     totalExpenses: expenses.reduce((sum, expense) => sum + expense.amount, 0),
     netProfit: 0,
+    profitMargin: 0,
     tithe: 0,
     savings: 0,
     available: 0,
   }
 
   financialSummary.netProfit = financialSummary.totalIncome - financialSummary.totalExpenses
+  financialSummary.profitMargin = financialSummary.totalIncome > 0 
+    ? (financialSummary.netProfit / financialSummary.totalIncome) * 100 
+    : 0
   financialSummary.tithe = financialSummary.netProfit * 0.1
   financialSummary.savings = financialSummary.netProfit * 0.2
   financialSummary.available = financialSummary.netProfit - financialSummary.tithe - financialSummary.savings

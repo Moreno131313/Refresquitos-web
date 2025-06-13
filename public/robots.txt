@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+# Host
+Host: https://refresquitos-manager.vercel.app
+
+# Sitemaps
+Sitemap: https://refresquitos-manager.vercel.app/sitemap.xml

@@ -1,85 +1,101 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { 
-  User, 
-  signInWithPopup, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut, 
-  onAuthStateChanged, 
-  GoogleAuthProvider 
-} from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { isFirebaseAvailable } from '@/lib/firebase'
+
+interface User {
+  email: string
+  name: string
+}
 
 interface AuthContextType {
   user: User | null
-  loading: boolean
-  signInWithGoogle: () => Promise<void>
-  signInWithEmail: (email: string, password: string) => Promise<void>
-  signUpWithEmail: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
+  isLoading: boolean
+  login: (email: string, name: string) => void
+  logout: () => void
+  isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
+    console.log('🔄 AuthProvider: Inicializando...')
+    
+    // Check for stored user session
+    const storedUser = localStorage.getItem('refresquitos-user')
+    console.log('🔍 AuthProvider: Usuario almacenado:', storedUser)
+    
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser)
+        console.log('✅ AuthProvider: Usuario parseado:', parsedUser)
+        setUser(parsedUser)
+      } catch (error) {
+        console.error('❌ AuthProvider: Error parsing stored user:', error)
+        localStorage.removeItem('refresquitos-user')
+      }
+    }
+    
+    setIsLoading(false)
+    console.log('✅ AuthProvider: Inicialización completa')
   }, [])
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider()
+  const login = (email: string, name: string) => {
+    console.log('🔐 AuthProvider: Login iniciado', { email, name })
+    
     try {
-      await signInWithPopup(auth, provider)
+      const userData = { email, name }
+      console.log('📝 AuthProvider: Creando userData:', userData)
+      
+      setUser(userData)
+      console.log('✅ AuthProvider: Usuario establecido en estado')
+      
+      localStorage.setItem('refresquitos-user', JSON.stringify(userData))
+      console.log('💾 AuthProvider: Usuario guardado en localStorage')
+      
+      // Verificar que se guardó correctamente
+      const saved = localStorage.getItem('refresquitos-user')
+      console.log('🔍 AuthProvider: Verificación guardado:', saved)
+      
+      console.log('🎉 AuthProvider: Login completado exitosamente')
     } catch (error) {
-      console.error('Error signing in with Google:', error)
+      console.error('❌ AuthProvider: Error en login:', error)
       throw error
     }
   }
 
-  const signInWithEmail = async (email: string, password: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password)
-    } catch (error) {
-      console.error('Error signing in with email:', error)
-      throw error
-    }
+  const logout = () => {
+    console.log('🚪 AuthProvider: Logout iniciado')
+    
+    setUser(null)
+    localStorage.removeItem('refresquitos-user')
+    
+    // Clear all app data on logout
+    const keys = Object.keys(localStorage).filter(key => key.startsWith('refresquitos-'))
+    keys.forEach(key => localStorage.removeItem(key))
+    
+    console.log('✅ AuthProvider: Logout completado')
   }
 
-  const signUpWithEmail = async (email: string, password: string) => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password)
-    } catch (error) {
-      console.error('Error signing up with email:', error)
-      throw error
-    }
-  }
-
-  const logout = async () => {
-    try {
-      await signOut(auth)
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  }
-
-  const value = {
+  const value: AuthContextType = {
     user,
-    loading,
-    signInWithGoogle,
-    signInWithEmail,
-    signUpWithEmail,
-    logout
+    isLoading,
+    login,
+    logout,
+    isAuthenticated: !!user
   }
+
+  // Debug logging
+  console.log('🔍 AuthProvider: Estado actual:', {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    firebaseAvailable: isFirebaseAvailable()
+  })
 
   return (
     <AuthContext.Provider value={value}>

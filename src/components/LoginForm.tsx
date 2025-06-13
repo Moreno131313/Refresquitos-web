@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { loginSchema, type LoginFormData } from '@/lib/validators'
 import { validateCredentials, getAuthCredentials } from '@/types/auth'
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
 
 interface LoginFormProps {
   onLogin: (email: string, name: string) => void
@@ -44,10 +45,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       <div className="w-full max-w-md">
         {/* Logo y título */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-24 h-24 mb-4 flex items-center justify-center">
-            <img 
+          <div className="mx-auto w-24 h-24 mb-4 flex items-center justify-center relative">
+            <Image 
               src="/logo1.png" 
               alt="Refresquitos Logo" 
+              width={96}
+              height={96}
               className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-lg"
               style={{
                 clipPath: 'circle(50% at 50% 50%)',
@@ -60,9 +63,10 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                 const fallback = target.nextElementSibling as HTMLElement;
                 if (fallback) fallback.style.display = 'flex';
               }}
+              priority
             />
             {/* Fallback logo */}
-            <div className="w-24 h-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg" style={{ display: 'none' }}>
+            <div className="w-24 h-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg absolute inset-0" style={{ display: 'none' }}>
               <span className="text-white text-2xl font-bold">R</span>
             </div>
           </div>

@@ -1,0 +1,24 @@
+{
+  "name": "firebase-migration-script",
+  "version": "1.0.0",
+  "description": "Script para migrar datos de Firebase de estructura /users/{email}/{collection} a /{collection} con userId",
+  "main": "migrate_data.js",
+  "scripts": {
+    "migrate": "node migrate_data.js",
+    "test-migrate": "echo 'Asegúrate de probar primero en un entorno de desarrollo' && node migrate_data.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
+  "keywords": [
+    "firebase",
+    "migration",
+    "firestore",
+    "data-migration"
+  ],
+  "author": "Refresquitos Team",
+  "license": "ISC",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
