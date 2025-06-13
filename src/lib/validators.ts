@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { MATERIAL_NAMES } from '@/types/financials';
+import { MATERIAL_NAMES } from '@/types/unified';
 
 export const incomeSchema = z.object({
   quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
+  product: z.enum(['Refresco', 'Helado']),
   type: z.enum(['Venta Empleado', 'Pedido Puerto López', 'Pedido Puerto Gaitán', 'Paca Villavicencio']),
   employee: z.enum(['César', 'Yesid']).optional(),
   date: z.string().min(1, 'La fecha es requerida'),
@@ -22,6 +23,7 @@ export const materialCostSchema = z.object({
 });
 
 export const productionSchema = z.object({
+  product: z.enum(['Refresco', 'Helado']),
   quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
   date: z.string().min(1, 'La fecha es requerida'),
   materialCosts: z.array(materialCostSchema).min(1, 'Debe incluir al menos un material'),

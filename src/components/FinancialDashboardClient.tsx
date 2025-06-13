@@ -9,11 +9,22 @@ import {
   IncomeItem, 
   ExpenseItem, 
   ProductionItem, 
-  AbsenceRecord,
-  FinancialSummary,
-  ProductionSummary,
-  EmployeeCycleInfo
+  AbsenceRecord
 } from '@/types/financials'
+import { 
+  Income,
+  Expense,
+  Production,
+  Absence,
+  EmployeeCycleInfo,
+  EmployeeBonus,
+  IncomeFormData,
+  ExpenseFormData,
+  ProductionFormData,
+  AbsenceFormData,
+  FinancialSummary,
+  ProductionSummary
+} from '@/types/unified'
 import { formatCurrency, generateId, getCurrentDate } from '@/lib/utils'
 import AppHeader from './AppHeader'
 import LoginForm from './LoginForm'
@@ -29,7 +40,13 @@ import IncomeList from './IncomeList'
 import ExpenseList from './ExpenseList'
 import ProductionList from './ProductionList'
 import FinancialCharts from './FinancialCharts'
+import EnhancedFinancialSummaryCard from './EnhancedFinancialSummary'
+import SaleSimulator from './SaleSimulator'
+import SalesAnalysis from './SalesAnalysis'
+import SeparateInventoryCard from './SeparateInventoryCard'
+import ProfitAnalysisTest from './ProfitAnalysisTest'
 import { DollarSign, Package, Users, BarChart3 } from 'lucide-react'
+import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus } from '@/lib/business-logic'
 
 export default function FinancialDashboardClient() {
   // Hook de autenticación
@@ -93,7 +110,9 @@ export default function FinancialDashboardClient() {
 
   // Funciones para manejar ingresos
   const addIncome = (incomeData: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => {
-    const amount = incomeData.quantity * 1000 // $1000 COP por unidad
+    // Calcular precio según el producto
+    const pricePerUnit = (incomeData as any).product === 'Helado' ? 1800 : 1000
+    const amount = incomeData.quantity * pricePerUnit
     const newIncome: IncomeItem = {
       ...incomeData,
       id: generateId(),
@@ -103,7 +122,7 @@ export default function FinancialDashboardClient() {
     setIncomes(prev => [newIncome, ...prev])
     toast({
       title: "Ingreso registrado",
-      description: `Se registró una venta de ${incomeData.quantity} unidades por ${formatCurrency(amount)}`,
+      description: `Se registró una venta de ${incomeData.quantity} ${(incomeData as any).product || 'Refresco'}s por ${formatCurrency(amount)}`,
     })
   }
 
@@ -187,6 +206,75 @@ export default function FinancialDashboardClient() {
     })
   }
 
+  // Función para agregar datos de prueba
+  const addSampleData = () => {
+    // Agregar producciones de prueba
+    const sampleProductions = [
+      {
+        id: generateId(),
+        date: '2024-01-15',
+                 product: 'Refresco' as const,
+         quantity: 100,
+        materialCosts: [
+          { name: 'Leche x cantina (40litros)', cost: 50000 },
+          { name: 'Azucar x BULTO', cost: 30000 }
+        ],
+        directLaborCost: 20000,
+        indirectCosts: 10000,
+        totalCost: 110000,
+        costPerUnit: 1100,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: generateId(),
+        date: '2024-01-16',
+                 product: 'Helado' as const,
+         quantity: 50,
+        materialCosts: [
+          { name: 'Leche x cantina (40litros)', cost: 40000 },
+          { name: 'Coco', cost: 25000 }
+        ],
+        directLaborCost: 15000,
+        indirectCosts: 8000,
+        totalCost: 88000,
+        costPerUnit: 1760,
+        createdAt: new Date().toISOString()
+      }
+    ]
+
+    // Agregar ventas de prueba
+    const sampleIncomes = [
+      {
+        id: generateId(),
+        amount: 30000,
+        quantity: 30,
+        date: '2024-01-17',
+        type: 'Venta Empleado' as const,
+                 product: 'Refresco' as const,
+         employee: 'César' as const,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: generateId(),
+        amount: 36000,
+        quantity: 20,
+        date: '2024-01-18',
+        type: 'Venta Empleado' as const,
+                 product: 'Helado' as const,
+         employee: 'Yesid' as const,
+        createdAt: new Date().toISOString()
+      }
+    ]
+
+    setProductions(prev => [...sampleProductions, ...prev])
+    setIncomes(prev => [...sampleIncomes, ...prev])
+    
+    toast({
+      title: "Datos de prueba agregados",
+      description: "Se agregaron producciones y ventas de refrescos y helados para probar el inventario separado",
+    })
+  }
+
   // Funciones para manejar ciclos de empleados
   const handleUpdateEmployeeCycleStart = (employee: 'César' | 'Yesid', newStartDate: string) => {
     console.log('📅 Actualizando fecha de inicio de ciclo:', {
@@ -219,24 +307,64 @@ export default function FinancialDashboardClient() {
     })
   }
 
-  // Cálculos del resumen financiero
-  const financialSummary: FinancialSummary = {
-    totalIncome: incomes.reduce((sum, income) => sum + income.amount, 0),
-    totalExpenses: expenses.reduce((sum, expense) => sum + expense.amount, 0),
-    netProfit: 0,
-    profitMargin: 0,
-    tithe: 0,
-    savings: 0,
-    available: 0,
-  }
+  // Convertir tipos legacy a tipos unificados
+  const unifiedProductions: Production[] = productions.map(prod => ({
+    id: prod.id,
+    date: prod.date,
+    product: (prod as any).product || 'Refresco' as const, // Usar el producto si existe, sino defaultear a Refresco
+    quantity: prod.quantity,
+    materialCosts: prod.materialCosts,
+    directLaborCost: prod.directLaborCost,
+    indirectCosts: prod.indirectCosts,
+    totalCost: prod.totalCost,
+    costPerUnit: prod.costPerUnit,
+    createdAt: prod.createdAt
+  }))
 
-  financialSummary.netProfit = financialSummary.totalIncome - financialSummary.totalExpenses
-  financialSummary.profitMargin = financialSummary.totalIncome > 0 
-    ? (financialSummary.netProfit / financialSummary.totalIncome) * 100 
-    : 0
-  financialSummary.tithe = financialSummary.netProfit * 0.1
-  financialSummary.savings = financialSummary.netProfit * 0.2
-  financialSummary.available = financialSummary.netProfit - financialSummary.tithe - financialSummary.savings
+  const unifiedIncomes: Income[] = incomes.map(income => ({
+    id: income.id,
+    amount: income.amount,
+    quantity: income.quantity,
+    date: income.date,
+    type: income.type,
+    product: (income as any).product || 'Refresco' as const, // Usar el producto si existe, sino defaultear a Refresco
+    employee: income.employee,
+    createdAt: income.createdAt
+  }))
+
+  const unifiedExpenses: Expense[] = expenses.map(expense => ({
+    id: expense.id,
+    name: expense.name,
+    amount: expense.amount,
+    date: expense.date,
+    category: expense.category,
+    type: expense.type,
+    createdAt: expense.createdAt
+  }))
+
+  // Cálculos del resumen financiero mejorado
+  const enhancedFinancialSummary = calculateEnhancedFinancialSummary(
+    unifiedProductions,
+    unifiedIncomes,
+    unifiedExpenses
+  )
+
+  // Cálculo del inventario separado por producto
+  const separateInventoryStatus = getSeparateInventoryStatus(
+    unifiedProductions,
+    unifiedIncomes
+  )
+
+  // Mantener compatibilidad con el resumen anterior
+  const financialSummary: FinancialSummary = {
+    totalIncome: enhancedFinancialSummary.totalRevenue,
+    totalExpenses: enhancedFinancialSummary.totalCostOfGoodsSold + enhancedFinancialSummary.operatingExpenses,
+    netProfit: enhancedFinancialSummary.netProfit,
+    profitMargin: enhancedFinancialSummary.netProfitMargin,
+    tithe: enhancedFinancialSummary.tithe,
+    savings: enhancedFinancialSummary.savings,
+    available: enhancedFinancialSummary.available,
+  }
 
   // Cálculos del resumen de producción
   const productionSummary: ProductionSummary = {
@@ -301,25 +429,55 @@ export default function FinancialDashboardClient() {
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FinancialSummaryCard summary={financialSummary} />
-              <ProductionSummaryCard summary={productionSummary} />
-            </div>
+            <ProfitAnalysisTest productions={unifiedProductions} incomes={unifiedIncomes} />
+            <EnhancedFinancialSummaryCard summary={enhancedFinancialSummary} />
+            <SeparateInventoryCard inventoryStatus={separateInventoryStatus} />
+            
+            {/* Botón para datos de prueba - solo mostrar si no hay datos */}
+            {productions.length === 0 && incomes.length === 0 && (
+              <Card className="border-dashed border-2 border-gray-300">
+                <CardContent className="p-6 text-center">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold mb-2">No hay datos para mostrar</h3>
+                  <p className="text-gray-600 mb-4">
+                    Agrega algunos datos de prueba para ver el inventario separado funcionando
+                  </p>
+                  <Button onClick={addSampleData} variant="outline">
+                    Agregar Datos de Prueba
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            
+            <SalesAnalysis productions={unifiedProductions} incomes={unifiedIncomes} />
             <FinancialCharts incomes={incomes} expenses={expenses} />
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Registrar Nuevo Ingreso</CardTitle>
-                <CardDescription>
-                  Registra las ventas de refrescos. El precio por unidad es de $1,000 COP.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <IncomeForm onSubmit={addIncome} />
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registrar Nuevo Ingreso</CardTitle>
+                  <CardDescription>
+                    Registra las ventas de refrescos ($1,000) y helados ($1,800). El precio se calcula automáticamente según el producto.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <IncomeForm onSubmit={addIncome} />
+                </CardContent>
+              </Card>
+              <SaleSimulator 
+                productions={unifiedProductions} 
+                incomes={unifiedIncomes} 
+                onProceedWithSale={(quantity) => {
+                  // Auto-llenar el formulario con la cantidad simulada
+                  toast({
+                    title: "Cantidad sugerida",
+                    description: `Usa ${quantity} unidades en el formulario de venta`,
+                  })
+                }}
+              />
+            </div>
             <IncomeList incomes={incomes} onDelete={deleteIncome} />
           </TabsContent>
 

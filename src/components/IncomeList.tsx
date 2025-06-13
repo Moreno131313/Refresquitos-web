@@ -2,11 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { IncomeItem } from '@/types/financials'
+import { Badge } from '@/components/ui/badge'
+import { Income } from '@/types/unified'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 interface IncomeListProps {
-  incomes: IncomeItem[]
+  incomes: Income[]
   onDelete: (id: string) => void
 }
 
@@ -32,8 +33,16 @@ export default function IncomeList({ incomes, onDelete }: IncomeListProps) {
             <div key={income.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex-1">
                 <div className="flex items-center gap-4">
-                  <div>
-                    <p className="font-medium">{income.type}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium">{income.type}</p>
+                      <Badge 
+                        variant={(income as any).product === 'Helado' ? 'secondary' : 'default'}
+                        className={(income as any).product === 'Helado' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}
+                      >
+                        {(income as any).product || 'Refresco'}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-gray-600">
                       {formatDate(income.date)} • {income.quantity} unidades
                       {income.employee && ` • ${income.employee}`}
@@ -41,6 +50,9 @@ export default function IncomeList({ incomes, onDelete }: IncomeListProps) {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-green-600">{formatCurrency(income.amount)}</p>
+                    <p className="text-xs text-gray-500">
+                      ${(income.amount / income.quantity).toLocaleString()} c/u
+                    </p>
                   </div>
                 </div>
               </div>

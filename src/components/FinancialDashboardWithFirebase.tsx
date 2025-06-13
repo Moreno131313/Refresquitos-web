@@ -6,14 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/useToast'
 import { 
-  IncomeItem, 
-  ExpenseItem, 
-  ProductionItem, 
-  AbsenceRecord,
+  Income,
+  Expense,
+  Production,
+  Absence,
+  EmployeeCycleInfo,
+  EmployeeBonus,
+  IncomeFormData,
+  ExpenseFormData,
+  ProductionFormData,
+  AbsenceFormData,
   FinancialSummary,
-  ProductionSummary,
-  EmployeeCycleInfo
-} from '@/types/financials'
+  ProductionSummary
+} from '@/types/unified'
 import { formatCurrency, generateId, getCurrentDate } from '@/lib/utils'
 import AppHeader from './AppHeader'
 import LoginForm from './LoginForm'
@@ -24,14 +29,16 @@ import DataMigration from './DataMigration'
 import IncomeForm from './IncomeForm'
 import ExpenseForm from './ExpenseForm'
 import ProductionForm from './ProductionForm'
-import EmployeeDashboard from './EmployeeDashboard'
-import FinancialSummaryCard from './FinancialSummaryCard'
-import ProductionSummaryCard from './ProductionSummaryCard'
+import EnhancedEmployeeDashboard from './EnhancedEmployeeDashboard'
+import EnhancedFinancialSummaryCard from './EnhancedFinancialSummary'
+import SaleSimulator from './SaleSimulator'
+import SalesAnalysis from './SalesAnalysis'
 import IncomeList from './IncomeList'
 import ExpenseList from './ExpenseList'
 import ProductionList from './ProductionList'
 import FinancialCharts from './FinancialCharts'
 import { DollarSign, Package, Users, BarChart3, Cloud, CloudOff } from 'lucide-react'
+import { calculateEnhancedFinancialSummary } from '@/lib/business-logic'
 import { LoginScreen } from './LoginScreen'
 import { Badge } from '@/components/ui/badge'
 
@@ -44,13 +51,16 @@ export default function FinancialDashboardWithFirebase() {
     absences,
     employeeCycles,
     employeeCycleInfoList,
+    bonuses,
     loading: firebaseLoading,
     error: firebaseError,
     addIncome: firebaseAddIncome,
     addExpense: firebaseAddExpense,
     addProduction: firebaseAddProduction,
     addAbsence: firebaseAddAbsence,
+    addBonus: firebaseAddBonus,
     updateEmployeeCycleStart: firebaseUpdateEmployeeCycleStart,
+    markBonusPaid: firebaseMarkBonusPaid,
     deleteIncome: firebaseDeleteIncome,
     deleteExpense: firebaseDeleteExpense,
     deleteProduction: firebaseDeleteProduction,
@@ -130,7 +140,7 @@ export default function FinancialDashboardWithFirebase() {
   console.log('🎉 FinancialDashboard: Renderizando dashboard principal')
 
   // Wrapper functions to handle form submissions
-  const handleAddIncome = (incomeData: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => {
+  const handleAddIncome = (incomeData: IncomeFormData) => {
     firebaseAddIncome(incomeData).catch(error => {
       toast({
         title: "Error",
@@ -140,7 +150,7 @@ export default function FinancialDashboardWithFirebase() {
     })
   }
 
-  const handleAddExpense = (expenseData: Omit<ExpenseItem, 'id' | 'createdAt'>) => {
+  const handleAddExpense = (expenseData: ExpenseFormData) => {
     firebaseAddExpense(expenseData).catch(error => {
       toast({
         title: "Error",
@@ -150,7 +160,7 @@ export default function FinancialDashboardWithFirebase() {
     })
   }
 
-  const handleAddProduction = (productionData: Omit<ProductionItem, 'id' | 'createdAt' | 'totalCost' | 'costPerUnit'>) => {
+  const handleAddProduction = (productionData: ProductionFormData) => {
     firebaseAddProduction(productionData).catch(error => {
       toast({
         title: "Error",
@@ -160,7 +170,7 @@ export default function FinancialDashboardWithFirebase() {
     })
   }
 
-  const handleAddAbsence = (absenceData: Omit<AbsenceRecord, 'id' | 'createdAt'>) => {
+  const handleAddAbsence = (absenceData: AbsenceFormData) => {
     firebaseAddAbsence(absenceData).catch(error => {
       toast({
         title: "Error",
@@ -284,14 +294,17 @@ export default function FinancialDashboardWithFirebase() {
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FinancialSummaryCard summary={financialSummary} />
-              <ProductionSummaryCard summary={productionSummary} />
-            </div>
+            <EnhancedFinancialSummaryCard 
+              summary={calculateEnhancedFinancialSummary(productions, incomes, expenses)}
+            />
             <FinancialCharts incomes={incomes} expenses={expenses} />
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">
+            <SaleSimulator 
+              productions={productions}
+              incomes={incomes}
+            />
             <Card>
               <CardHeader>
                 <CardTitle>Registrar Nuevo Ingreso</CardTitle>
@@ -303,6 +316,10 @@ export default function FinancialDashboardWithFirebase() {
                 <IncomeForm onSubmit={handleAddIncome} />
               </CardContent>
             </Card>
+            <SalesAnalysis 
+              incomes={incomes}
+              productions={productions}
+            />
             <IncomeList incomes={incomes} onDelete={firebaseDeleteIncome} />
           </TabsContent>
 
@@ -337,14 +354,17 @@ export default function FinancialDashboardWithFirebase() {
           </TabsContent>
 
           <TabsContent value="empleados" className="space-y-6">
-            <EmployeeDashboard 
+            <EnhancedEmployeeDashboard 
               incomes={incomes}
               absences={absences}
               employeeCycleInfoList={employeeCycleInfoList}
+              bonuses={bonuses}
               onAddAbsence={handleAddAbsence}
               onDeleteAbsence={firebaseDeleteAbsence}
               onUpdateEmployeeCycleStart={handleUpdateEmployeeCycleStart}
               onStartNewCycle={handleStartNewCycle}
+              onAddBonus={firebaseAddBonus}
+              onMarkBonusPaid={firebaseMarkBonusPaid}
             />
           </TabsContent>
         </Tabs>

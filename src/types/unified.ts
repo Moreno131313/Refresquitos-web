@@ -12,6 +12,7 @@ export interface Income extends BaseEntity {
   quantity: number
   date: string
   type: 'Venta Empleado' | 'Pedido Puerto López' | 'Pedido Puerto Gaitán' | 'Paca Villavicencio'
+  product: 'Refresco' | 'Helado'
   employee?: 'César' | 'Yesid'
   description?: string
   userId?: string // Para Firebase
@@ -34,6 +35,7 @@ export interface MaterialCost {
 
 export interface Production extends BaseEntity {
   date: string
+  product: 'Refresco' | 'Helado'
   quantity: number
   materialCosts: MaterialCost[]
   directLaborCost: number
@@ -113,8 +115,9 @@ export type ProductionFormData = Omit<Production, 'id' | 'createdAt' | 'updatedA
 export type AbsenceFormData = Omit<Absence, 'id' | 'createdAt' | 'updatedAt'>
 export type EmployeeCycleFormData = Omit<EmployeeCycle, 'id' | 'createdAt' | 'updatedAt'>
 
-// Lista de materiales
+// Lista de materiales actualizada
 export const MATERIAL_NAMES = [
+  // Materiales para Refrescos
   'Leche x cantina (40litros)',
   'Leche x cantina (20 litros)',
   'Azucar x BULTO',
@@ -133,7 +136,114 @@ export const MATERIAL_NAMES = [
   'Colante azul',
   'Colorante pardo C11',
   'Bolsas para Fabricar refrescos grandes',
-  'Bolsas para fabricar refrescos pequeños'
+  'Bolsas para fabricar refrescos pequeños',
+  
+  // Materiales para Helados
+  'Coco',
+  'Mani entero',
+  'Mani partido',
+  'Crema de leche litro',
+  'Mantequilla vegetal',
+  'Taxi',
+  'Bolsas de papel',
+  'Arequipe',
+  'Vasos para helados',
+  'Bolsas para helados',
+  'Palillos',
+  'Uvas pasas',
+  'Esencia de ron con pasas'
 ] as const
 
-export type MaterialName = typeof MATERIAL_NAMES[number] 
+export type MaterialName = typeof MATERIAL_NAMES[number]
+
+// Configuración de productos
+export const PRODUCT_CONFIG = {
+  Refresco: {
+    price: 1000,
+    materials: [
+      'Leche x cantina (40litros)',
+      'Leche x cantina (20 litros)',
+      'Azucar x BULTO',
+      'Azucar x kilo',
+      'Maracuya',
+      'Mora',
+      'Esencia vainilla blanca *Galon',
+      'Esencia de Chicle*500ml',
+      'Esencia de Arequipe*500ml',
+      'Esencia de Vainilla blanca levapan *500ml',
+      'Esencia de Leche condensada *500ml',
+      'Galletas oreo *12und',
+      'CMC *500Gr',
+      'Bolsas para empacar refrescos grandes',
+      'Bolsa para empacar refrescos pequeños',
+      'Colante azul',
+      'Colorante pardo C11',
+      'Bolsas para Fabricar refrescos grandes',
+      'Bolsas para fabricar refrescos pequeños'
+    ]
+  },
+  Helado: {
+    price: 1800,
+    materials: [
+      'Leche x cantina (40litros)',
+      'Leche x cantina (20 litros)',
+      'Azucar x BULTO',
+      'Azucar x kilo',
+      'Coco',
+      'Mani entero',
+      'Mani partido',
+      'Crema de leche litro',
+      'Mantequilla vegetal',
+      'Taxi',
+      'Bolsas de papel',
+      'Arequipe',
+      'Vasos para helados',
+      'Bolsas para helados',
+      'Palillos',
+      'Uvas pasas',
+      'Esencia de vainilla blanca *Galon',
+      'Esencia de ron con pasas'
+    ]
+  }
+} as const
+
+export type ProductType = keyof typeof PRODUCT_CONFIG
+
+// Nuevos tipos para el sistema de bonos
+export interface EmployeeBonus extends BaseEntity {
+  employee: 'César' | 'Yesid'
+  cycleStartDate: string
+  cycleEndDate: string
+  totalUnits: number
+  totalRevenue: number
+  workingDays: number
+  absences: number
+  averageUnitsPerDay: number
+  bonusAmount: number
+  isPaid: boolean
+  paidDate?: string
+  notes?: string
+  userId?: string // Para Firebase
+}
+
+export interface EmployeeSalesDetail {
+  date: string
+  units: number
+  revenue: number
+  product: string
+}
+
+export interface EmployeeCycleDetail {
+  employee: 'César' | 'Yesid'
+  cycleStartDate: string
+  cycleEndDate?: string
+  daysWorked: number
+  totalUnits: number
+  totalRevenue: number
+  absences: number
+  salesByDate: EmployeeSalesDetail[]
+  averageUnitsPerDay: number
+  bonusEligible: boolean
+  bonusAmount: number
+  isComplete: boolean
+} 

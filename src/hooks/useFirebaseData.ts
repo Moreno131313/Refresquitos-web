@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
   collection, 
   addDoc, 
@@ -15,12 +15,13 @@ import {
 import { db, isFirebaseAvailable } from '@/lib/firebase'
 import { useAuth } from '@/components/AuthProvider'
 import { 
-  Income,
-  Expense,
-  Production,
-  Absence,
+  Income, 
+  Expense, 
+  Production, 
+  Absence, 
   EmployeeCycle,
   EmployeeCycleInfo,
+  EmployeeBonus,
   IncomeFormData,
   ExpenseFormData,
   ProductionFormData,
@@ -35,16 +36,28 @@ export function useFirebaseData() {
   const [productions, setProductions] = useState<Production[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
   const [employeeCycles, setEmployeeCycles] = useState<EmployeeCycle[]>([])
+  const [bonuses, setBonuses] = useState<EmployeeBonus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Computed property for employeeCycleInfoList
-  const employeeCycleInfoList: EmployeeCycleInfo[] = employeeCycles
-    .filter(cycle => cycle.isActive)
-    .map(cycle => ({
+  const employeeCycleInfoList: EmployeeCycleInfo[] = useMemo(() => {
+    const activeCycles = employeeCycles.filter(cycle => cycle.isActive)
+    
+    // Si no hay ciclos activos, crear ciclos por defecto
+    if (activeCycles.length === 0 && user?.email) {
+      const today = new Date().toISOString().split('T')[0]
+      return [
+        { employee: 'César', cycleStartDate: today },
+        { employee: 'Yesid', cycleStartDate: today }
+      ]
+    }
+    
+    return activeCycles.map(cycle => ({
       employee: cycle.employee,
       cycleStartDate: cycle.startDate
     }))
+  }, [employeeCycles, user?.email])
 
   // Get user-specific collection path - memoized to avoid dependency issues
   const getUserCollection = useCallback((collectionName: string) => {
@@ -71,11 +84,15 @@ export function useFirebaseData() {
       const incomesCollection = collection(db, 'users', user.email, 'incomes')
       const incomesQuery = query(incomesCollection, orderBy('date', 'desc'))
       const unsubIncomes = onSnapshot(incomesQuery, (snapshot) => {
-        const incomesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt || new Date().toISOString()
-        })) as Income[]
+        const incomesData = snapshot.docs.map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            ...data,
+            product: data.product || 'Refresco', // Migración automática
+            createdAt: data.createdAt || new Date().toISOString()
+          }
+        }) as Income[]
         setIncomes(incomesData)
       })
       unsubscribes.push(unsubIncomes)
@@ -97,11 +114,15 @@ export function useFirebaseData() {
       const productionsCollection = collection(db, 'users', user.email, 'productions')
       const productionsQuery = query(productionsCollection, orderBy('date', 'desc'))
       const unsubProductions = onSnapshot(productionsQuery, (snapshot) => {
-        const productionsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt || new Date().toISOString()
-        })) as Production[]
+        const productionsData = snapshot.docs.map(doc => {
+          const data = doc.data()
+          return {
+            id: doc.id,
+            ...data,
+            product: data.product || 'Refresco', // Migración automática
+            createdAt: data.createdAt || new Date().toISOString()
+          }
+        }) as Production[]
         setProductions(productionsData)
       })
       unsubscribes.push(unsubProductions)
@@ -129,8 +150,52 @@ export function useFirebaseData() {
           createdAt: doc.data().createdAt || new Date().toISOString()
         })) as EmployeeCycle[]
         setEmployeeCycles(cyclesData)
+        
+        // Inicializar ciclos automáticamente si no existen
+        const activeCycles = cyclesData.filter(cycle => cycle.isActive)
+        if (activeCycles.length === 0) {
+          const today = new Date().toISOString().split('T')[0]
+          
+          // Crear ciclos para César y Yesid
+          const initializeCycles = async () => {
+            try {
+              await addDoc(cyclesCollection, {
+                employee: 'César',
+                startDate: today,
+                isActive: true,
+                createdAt: new Date().toISOString()
+              })
+              
+              await addDoc(cyclesCollection, {
+                employee: 'Yesid',
+                startDate: today,
+                isActive: true,
+                createdAt: new Date().toISOString()
+              })
+              
+              console.log('✅ Ciclos de empleados inicializados automáticamente')
+            } catch (error) {
+              console.error('Error inicializando ciclos:', error)
+            }
+          }
+          
+          initializeCycles()
+        }
       })
       unsubscribes.push(unsubCycles)
+
+      // Subscribe to bonuses
+      const bonusesCollection = collection(db, 'users', user.email, 'bonuses')
+      const bonusesQuery = query(bonusesCollection, orderBy('cycleStartDate', 'desc'))
+      const unsubBonuses = onSnapshot(bonusesQuery, (snapshot) => {
+        const bonusesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt || new Date().toISOString()
+        })) as EmployeeBonus[]
+        setBonuses(bonusesData)
+      })
+      unsubscribes.push(unsubBonuses)
 
       setLoading(false)
     } catch (err) {
@@ -149,7 +214,10 @@ export function useFirebaseData() {
     const collection = getUserCollection('incomes')
     if (!collection) throw new Error('User not authenticated')
     
-    const amount = incomeData.quantity * 1000 // $1000 COP por unidad
+    // Calcular el precio basado en el producto
+    const pricePerUnit = incomeData.product === 'Helado' ? 1800 : 1000
+    const amount = incomeData.quantity * pricePerUnit
+    
     const income: Omit<Income, 'id'> = {
       ...incomeData,
       amount,
@@ -270,6 +338,36 @@ export function useFirebaseData() {
     await deleteDoc(cycleDoc)
   }
 
+  // Bonus functions
+  const addBonus = async (bonusData: Omit<EmployeeBonus, 'id' | 'createdAt'>) => {
+    const collection = getUserCollection('bonuses')
+    if (!collection) throw new Error('User not authenticated')
+    
+    const bonus: Omit<EmployeeBonus, 'id'> = {
+      ...bonusData,
+      createdAt: new Date().toISOString()
+    }
+    
+    await addDoc(collection, bonus)
+  }
+
+  const markBonusPaid = async (bonusId: string, paidDate: string, notes?: string) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const bonusDoc = doc(db, 'users', user.email, 'bonuses', bonusId)
+    await updateDoc(bonusDoc, {
+      isPaid: true,
+      paidDate,
+      notes,
+      updatedAt: new Date().toISOString()
+    })
+  }
+
+  const deleteBonus = async (id: string) => {
+    if (!user?.email) throw new Error('User not authenticated')
+    const bonusDoc = doc(db, 'users', user.email, 'bonuses', id)
+    await deleteDoc(bonusDoc)
+  }
+
   return {
     incomes,
     expenses,
@@ -277,6 +375,7 @@ export function useFirebaseData() {
     absences,
     employeeCycles,
     employeeCycleInfoList,
+    bonuses,
     loading,
     error,
     addIncome,
@@ -284,11 +383,14 @@ export function useFirebaseData() {
     addProduction,
     addAbsence,
     addEmployeeCycle,
+    addBonus,
     updateEmployeeCycleStart,
+    markBonusPaid,
     deleteIncome,
     deleteExpense,
     deleteProduction,
     deleteAbsence,
-    deleteEmployeeCycle
+    deleteEmployeeCycle,
+    deleteBonus
   }
 } 

@@ -8,10 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { incomeSchema, type IncomeFormData } from '@/lib/validators'
 import { getCurrentDate } from '@/lib/utils'
-import { IncomeItem } from '@/types/financials'
 
 interface IncomeFormProps {
-  onSubmit: (data: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => void
+  onSubmit: (data: IncomeFormData) => void
 }
 
 export default function IncomeForm({ onSubmit }: IncomeFormProps) {
@@ -26,20 +25,28 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
     defaultValues: {
       date: getCurrentDate(),
       quantity: 1,
-      type: 'Venta Empleado'
+      type: 'Venta Empleado',
+      product: 'Refresco'
     }
   })
 
   const watchedType = watch('type')
+  const watchedProduct = watch('product')
 
   const handleFormSubmit = (data: IncomeFormData) => {
     onSubmit(data)
     reset({
       date: getCurrentDate(),
       quantity: 1,
-      type: 'Venta Empleado'
+      type: 'Venta Empleado',
+      product: 'Refresco'
     })
   }
+
+  // Calcular precio total
+  const quantity = watch('quantity') || 1
+  const pricePerUnit = watchedProduct === 'Helado' ? 1800 : 1000
+  const totalAmount = quantity * pricePerUnit
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
@@ -60,6 +67,23 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
         </div>
 
         <div className="space-y-2">
+          <label htmlFor="product" className="text-sm font-medium">
+            Producto
+          </label>
+          <select
+            id="product"
+            {...register('product')}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="Refresco">Refresco ($1,000)</option>
+            <option value="Helado">Helado ($1,800)</option>
+          </select>
+          {errors.product && (
+            <p className="text-sm text-red-500">{errors.product.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="quantity" className="text-sm font-medium">
             Cantidad de Unidades
           </label>
@@ -73,6 +97,9 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
           {errors.quantity && (
             <p className="text-sm text-red-500">{errors.quantity.message}</p>
           )}
+          <p className="text-xs text-gray-500">
+            Total: ${totalAmount.toLocaleString()} COP
+          </p>
         </div>
 
         <div className="space-y-2">
