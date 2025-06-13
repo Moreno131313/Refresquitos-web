@@ -44,7 +44,6 @@ import EnhancedFinancialSummaryCard from './EnhancedFinancialSummary'
 import SaleSimulator from './SaleSimulator'
 import SalesAnalysis from './SalesAnalysis'
 import SeparateInventoryCard from './SeparateInventoryCard'
-import ProfitAnalysisTest from './ProfitAnalysisTest'
 import { DollarSign, Package, Users, BarChart3 } from 'lucide-react'
 import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus } from '@/lib/business-logic'
 
@@ -429,7 +428,6 @@ export default function FinancialDashboardClient() {
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
-            <ProfitAnalysisTest productions={unifiedProductions} incomes={unifiedIncomes} />
             <EnhancedFinancialSummaryCard summary={enhancedFinancialSummary} />
             <SeparateInventoryCard inventoryStatus={separateInventoryStatus} />
             
