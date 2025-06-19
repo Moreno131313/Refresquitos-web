@@ -865,4 +865,527 @@ export function calculateSeparateFinancialAnalysis(
       available
     }
   }
-} 
+}
+
+// ===== SISTEMA DE ANÁLISIS TEMPORAL =====
+
+/**
+ * Interface para análisis de un período específico
+ */
+export interface PeriodAnalysis {
+  period: string
+  startDate: string
+  endDate: string
+  totalRevenue: number
+  totalCOGS: number
+  grossProfit: number
+  grossProfitMargin: number
+  operatingExpenses: number
+  netProfit: number
+  netProfitMargin: number
+  unitsSold: number
+  salesDays: number
+  averageRevenuePerDay: number
+  averageUnitsPerDay: number
+  refrescos: {
+    revenue: number
+    units: number
+    cogs: number
+    grossProfit: number
+  }
+  helados: {
+    revenue: number
+    units: number
+    cogs: number
+    grossProfit: number
+  }
+}
+
+/**
+ * Interface para análisis anual
+ */
+export interface AnnualAnalysis {
+  year: number
+  monthlyBreakdown: PeriodAnalysis[]
+  yearlyTotals: {
+    totalRevenue: number
+    totalCOGS: number
+    grossProfit: number
+    grossProfitMargin: number
+    operatingExpenses: number
+    netProfit: number
+    netProfitMargin: number
+    totalUnitsSold: number
+    salesDays: number
+    averageRevenuePerMonth: number
+    averageUnitsPerMonth: number
+    bestMonth: string
+    worstMonth: string
+    growthTrend: 'CRECIENTE' | 'ESTABLE' | 'DECRECIENTE'
+  }
+  productBreakdown: {
+    refrescos: {
+      totalRevenue: number
+      totalUnits: number
+      totalCOGS: number
+      grossProfit: number
+      percentage: number
+    }
+    helados: {
+      totalRevenue: number
+      totalUnits: number
+      totalCOGS: number
+      grossProfit: number
+      percentage: number
+    }
+  }
+}
+
+/**
+ * Filtra datos por rango de fechas
+ */
+function filterDataByDateRange<T extends { date: string }>(
+  data: T[],
+  startDate: string,
+  endDate: string
+): T[] {
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  end.setHours(23, 59, 59, 999) // Incluir todo el día final
+  
+  return data.filter(item => {
+    const itemDate = new Date(item.date)
+    return itemDate >= start && itemDate <= end
+  })
+}
+
+/**
+ * Genera análisis de un período específico (mes específico o rango de fechas)
+ */
+export function generatePeriodAnalysis(
+  startDate: string,
+  endDate: string,
+  productions: Production[],
+  incomes: Income[],
+  expenses: Expense[]
+): PeriodAnalysis {
+  // Filtrar datos por período
+  const periodIncomes = filterDataByDateRange(incomes, startDate, endDate)
+  const periodExpenses = filterDataByDateRange(expenses, startDate, endDate)
+  
+  // Separar ventas por producto
+  const refrescoSales = periodIncomes.filter(i => i.product === 'Refresco')
+  const heladoSales = periodIncomes.filter(i => i.product === 'Helado')
+  
+  // Calcular métricas de refrescos
+  const refrescoRevenue = refrescoSales.reduce((sum, sale) => sum + sale.amount, 0)
+  const refrescoUnits = refrescoSales.reduce((sum, sale) => sum + sale.quantity, 0)
+  
+  // Calcular métricas de helados
+  const heladoRevenue = heladoSales.reduce((sum, sale) => sum + sale.amount, 0)
+  const heladoUnits = heladoSales.reduce((sum, sale) => sum + sale.quantity, 0)
+  
+  // Calcular COGS usando FIFO para el período
+  const refrescoProductions = productions.filter(p => p.product === 'Refresco')
+  const heladoProductions = productions.filter(p => p.product === 'Helado')
+  
+  const refrescoAnalysis = processAllSalesByProduct(refrescoProductions, refrescoSales)
+  const heladoAnalysis = processAllSalesByProduct(heladoProductions, heladoSales)
+  
+  // Totales
+  const totalRevenue = refrescoRevenue + heladoRevenue
+  const totalCOGS = refrescoAnalysis.totalCOGS + heladoAnalysis.totalCOGS
+  const grossProfit = totalRevenue - totalCOGS
+  const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
+  
+  // Gastos operativos del período
+  const operatingExpenses = periodExpenses
+    .filter(expense => 
+      expense.category !== 'Materia Prima Directa' && 
+      expense.category !== 'Mano de Obra Directa' &&
+      expense.category !== 'Costos Indirectos de Fabricación'
+    )
+    .reduce((sum, expense) => sum + expense.amount, 0)
+  
+  const netProfit = grossProfit - operatingExpenses
+  const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+  
+  const unitsSold = refrescoUnits + heladoUnits
+  const uniqueSalesDays = new Set(periodIncomes.map(sale => sale.date)).size
+  const averageRevenuePerDay = uniqueSalesDays > 0 ? totalRevenue / uniqueSalesDays : 0
+  const averageUnitsPerDay = uniqueSalesDays > 0 ? unitsSold / uniqueSalesDays : 0
+  
+  // Generar nombre del período
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  const periodName = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+    ? `${start.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`
+    : `${start.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${end.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+  
+  return {
+    period: periodName,
+    startDate,
+    endDate,
+    totalRevenue,
+    totalCOGS,
+    grossProfit,
+    grossProfitMargin,
+    operatingExpenses,
+    netProfit,
+    netProfitMargin,
+    unitsSold,
+    salesDays: uniqueSalesDays,
+    averageRevenuePerDay,
+    averageUnitsPerDay,
+    refrescos: {
+      revenue: refrescoRevenue,
+      units: refrescoUnits,
+      cogs: refrescoAnalysis.totalCOGS,
+      grossProfit: refrescoRevenue - refrescoAnalysis.totalCOGS
+    },
+    helados: {
+      revenue: heladoRevenue,
+      units: heladoUnits,
+      cogs: heladoAnalysis.totalCOGS,
+      grossProfit: heladoRevenue - heladoAnalysis.totalCOGS
+    }
+  }
+}
+
+/**
+ * Genera análisis mensual para un mes específico
+ */
+export function generateMonthlyAnalysis(
+  year: number,
+  month: number, // 1-12
+  productions: Production[],
+  incomes: Income[],
+  expenses: Expense[]
+): PeriodAnalysis {
+  const startDate = `${year}-${month.toString().padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`
+  
+  return generatePeriodAnalysis(startDate, endDate, productions, incomes, expenses)
+}
+
+/**
+ * Genera análisis anual completo
+ */
+export function generateAnnualAnalysis(
+  year: number,
+  productions: Production[],
+  incomes: Income[],
+  expenses: Expense[]
+): AnnualAnalysis {
+  const monthlyBreakdown: PeriodAnalysis[] = []
+  
+  // Generar análisis para cada mes
+  for (let month = 1; month <= 12; month++) {
+    const monthAnalysis = generateMonthlyAnalysis(year, month, productions, incomes, expenses)
+    monthlyBreakdown.push(monthAnalysis)
+  }
+  
+  // Calcular totales anuales
+  const yearlyTotals = {
+    totalRevenue: monthlyBreakdown.reduce((sum, month) => sum + month.totalRevenue, 0),
+    totalCOGS: monthlyBreakdown.reduce((sum, month) => sum + month.totalCOGS, 0),
+    grossProfit: monthlyBreakdown.reduce((sum, month) => sum + month.grossProfit, 0),
+    grossProfitMargin: 0,
+    operatingExpenses: monthlyBreakdown.reduce((sum, month) => sum + month.operatingExpenses, 0),
+    netProfit: monthlyBreakdown.reduce((sum, month) => sum + month.netProfit, 0),
+    netProfitMargin: 0,
+    totalUnitsSold: monthlyBreakdown.reduce((sum, month) => sum + month.unitsSold, 0),
+    salesDays: monthlyBreakdown.reduce((sum, month) => sum + month.salesDays, 0),
+    averageRevenuePerMonth: 0,
+    averageUnitsPerMonth: 0,
+    bestMonth: '',
+    worstMonth: '',
+    growthTrend: 'ESTABLE' as 'CRECIENTE' | 'ESTABLE' | 'DECRECIENTE'
+  }
+  
+  // Calcular porcentajes
+  yearlyTotals.grossProfitMargin = yearlyTotals.totalRevenue > 0 
+    ? (yearlyTotals.grossProfit / yearlyTotals.totalRevenue) * 100 : 0
+  yearlyTotals.netProfitMargin = yearlyTotals.totalRevenue > 0 
+    ? (yearlyTotals.netProfit / yearlyTotals.totalRevenue) * 100 : 0
+  
+  // Calcular promedios
+  const monthsWithSales = monthlyBreakdown.filter(m => m.totalRevenue > 0).length
+  yearlyTotals.averageRevenuePerMonth = monthsWithSales > 0 
+    ? yearlyTotals.totalRevenue / monthsWithSales : 0
+  yearlyTotals.averageUnitsPerMonth = monthsWithSales > 0 
+    ? yearlyTotals.totalUnitsSold / monthsWithSales : 0
+  
+  // Encontrar mejor y peor mes
+  const monthsWithData = monthlyBreakdown.filter(m => m.totalRevenue > 0)
+  if (monthsWithData.length > 0) {
+    const bestMonth = monthsWithData.reduce((best, current) => 
+      current.netProfit > best.netProfit ? current : best
+    )
+    const worstMonth = monthsWithData.reduce((worst, current) => 
+      current.netProfit < worst.netProfit ? current : worst
+    )
+    
+    yearlyTotals.bestMonth = bestMonth.period
+    yearlyTotals.worstMonth = worstMonth.period
+  }
+  
+  // Determinar tendencia de crecimiento
+  if (monthsWithData.length >= 3) {
+    const firstHalf = monthsWithData.slice(0, Math.floor(monthsWithData.length / 2))
+    const secondHalf = monthsWithData.slice(Math.floor(monthsWithData.length / 2))
+    
+    const firstHalfAvg = firstHalf.reduce((sum, m) => sum + m.totalRevenue, 0) / firstHalf.length
+    const secondHalfAvg = secondHalf.reduce((sum, m) => sum + m.totalRevenue, 0) / secondHalf.length
+    
+    const growthRate = ((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100
+    
+    if (growthRate > 5) {
+      yearlyTotals.growthTrend = 'CRECIENTE' as const
+    } else if (growthRate < -5) {
+      yearlyTotals.growthTrend = 'DECRECIENTE' as const
+    } else {
+      yearlyTotals.growthTrend = 'ESTABLE' as const
+    }
+  }
+  
+  // Desglose por productos
+  const productBreakdown = {
+    refrescos: {
+      totalRevenue: monthlyBreakdown.reduce((sum, month) => sum + month.refrescos.revenue, 0),
+      totalUnits: monthlyBreakdown.reduce((sum, month) => sum + month.refrescos.units, 0),
+      totalCOGS: monthlyBreakdown.reduce((sum, month) => sum + month.refrescos.cogs, 0),
+      grossProfit: monthlyBreakdown.reduce((sum, month) => sum + month.refrescos.grossProfit, 0),
+      percentage: 0
+    },
+    helados: {
+      totalRevenue: monthlyBreakdown.reduce((sum, month) => sum + month.helados.revenue, 0),
+      totalUnits: monthlyBreakdown.reduce((sum, month) => sum + month.helados.units, 0),
+      totalCOGS: monthlyBreakdown.reduce((sum, month) => sum + month.helados.cogs, 0),
+      grossProfit: monthlyBreakdown.reduce((sum, month) => sum + month.helados.grossProfit, 0),
+      percentage: 0
+    }
+  }
+  
+  // Calcular porcentajes de participación
+  if (yearlyTotals.totalRevenue > 0) {
+    productBreakdown.refrescos.percentage = (productBreakdown.refrescos.totalRevenue / yearlyTotals.totalRevenue) * 100
+    productBreakdown.helados.percentage = (productBreakdown.helados.totalRevenue / yearlyTotals.totalRevenue) * 100
+  }
+  
+  return {
+    year,
+    monthlyBreakdown,
+    yearlyTotals,
+    productBreakdown
+  }
+}
+
+/**
+ * Obtiene lista de años disponibles en los datos
+ */
+export function getAvailableYears(incomes: Income[]): number[] {
+  const years = new Set<number>()
+  
+  incomes.forEach(income => {
+    const year = new Date(income.date).getFullYear()
+    years.add(year)
+  })
+  
+  return Array.from(years).sort((a, b) => b - a) // Más reciente primero
+}
+
+/**
+ * Obtiene lista de meses disponibles para un año específico
+ */
+export function getAvailableMonths(year: number, incomes: Income[]): Array<{
+  month: number
+  name: string
+  hasSales: boolean
+}> {
+  const monthsWithSales = new Set<number>()
+  
+  incomes.forEach(income => {
+    const incomeDate = new Date(income.date)
+    if (incomeDate.getFullYear() === year) {
+      monthsWithSales.add(incomeDate.getMonth() + 1)
+    }
+  })
+  
+  const months = []
+  for (let i = 1; i <= 12; i++) {
+    months.push({
+      month: i,
+      name: new Date(year, i - 1, 1).toLocaleDateString('es-ES', { month: 'long' }),
+      hasSales: monthsWithSales.has(i)
+    })
+  }
+  
+  return months
+}
+
+// Interface para el análisis de tipos de ventas
+export interface SalesTypeBreakdown {
+  type: string
+  totalRevenue: number
+  totalUnits: number
+  averagePrice: number
+  percentage: number
+  product: 'Refresco' | 'Helado'
+  transactions: number
+}
+
+// Función para obtener el desglose de tipos de ventas en un período
+export function getSalesTypeBreakdown(
+  startDate: string,
+  endDate: string,
+  incomes: Income[]
+): SalesTypeBreakdown[] {
+  const filteredIncomes = filterDataByDateRange(incomes, startDate, endDate)
+  
+  if (filteredIncomes.length === 0) {
+    return []
+  }
+
+  // Agrupar por tipo de venta
+  const groupedByType = filteredIncomes.reduce((acc, income) => {
+    const key = `${income.type}-${income.product}`
+    
+    if (!acc[key]) {
+      acc[key] = {
+        type: income.type,
+        product: income.product,
+        totalRevenue: 0,
+        totalUnits: 0,
+        transactions: 0
+      }
+    }
+    
+    acc[key].totalRevenue += income.amount
+    acc[key].totalUnits += income.quantity
+    acc[key].transactions += 1
+    
+    return acc
+  }, {} as Record<string, any>)
+
+  const totalRevenue = filteredIncomes.reduce((sum, income) => sum + income.amount, 0)
+
+  // Convertir a array y calcular métricas
+  return Object.values(groupedByType).map((group: any): SalesTypeBreakdown => ({
+    type: group.type,
+    product: group.product,
+    totalRevenue: group.totalRevenue,
+    totalUnits: group.totalUnits,
+    averagePrice: group.totalUnits > 0 ? group.totalRevenue / group.totalUnits : 0,
+    percentage: totalRevenue > 0 ? (group.totalRevenue / totalRevenue) * 100 : 0,
+    transactions: group.transactions
+  })).sort((a, b) => b.totalRevenue - a.totalRevenue) // Ordenar por ingresos descendente
+}
+
+// Interface para el análisis de ventas por empleado
+export interface EmployeeSalesAnalysis {
+  employee: 'César' | 'Yesid'
+  totalRevenue: number
+  totalUnits: number
+  transactions: number
+  refrescos: {
+    revenue: number
+    units: number
+    transactions: number
+    averagePrice: number
+  }
+  helados: {
+    revenue: number
+    units: number
+    transactions: number
+    averagePrice: number
+  }
+  averageRevenuePerTransaction: number
+  productMix: {
+    refrescosPercentage: number
+    heladosPercentage: number
+  }
+}
+
+// Función para obtener el análisis de ventas por empleado en un período
+export function getEmployeeSalesAnalysis(
+  startDate: string,
+  endDate: string,
+  incomes: Income[]
+): EmployeeSalesAnalysis[] {
+  const filteredIncomes = filterDataByDateRange(incomes, startDate, endDate)
+  
+  // Filtrar solo ventas de empleados
+  const employeeSales = filteredIncomes.filter(income => 
+    income.type === 'Venta Empleado' && income.employee
+  )
+
+  if (employeeSales.length === 0) {
+    return []
+  }
+
+  // Agrupar por empleado
+  const employeeGroups = employeeSales.reduce((acc, income) => {
+    const employee = income.employee!
+    
+    if (!acc[employee]) {
+      acc[employee] = {
+        employee,
+        sales: []
+      }
+    }
+    
+    acc[employee].sales.push(income)
+    return acc
+  }, {} as Record<string, { employee: 'César' | 'Yesid', sales: Income[] }>)
+
+  // Calcular métricas para cada empleado
+  return Object.values(employeeGroups).map(group => {
+    const { employee, sales } = group
+    
+    // Totales generales
+    const totalRevenue = sales.reduce((sum, sale) => sum + sale.amount, 0)
+    const totalUnits = sales.reduce((sum, sale) => sum + sale.quantity, 0)
+    const transactions = sales.length
+
+    // Desglose por producto
+    const refrescoSales = sales.filter(sale => sale.product === 'Refresco')
+    const heladoSales = sales.filter(sale => sale.product === 'Helado')
+
+    const refrescos = {
+      revenue: refrescoSales.reduce((sum, sale) => sum + sale.amount, 0),
+      units: refrescoSales.reduce((sum, sale) => sum + sale.quantity, 0),
+      transactions: refrescoSales.length,
+      averagePrice: 0
+    }
+    refrescos.averagePrice = refrescos.units > 0 ? refrescos.revenue / refrescos.units : 0
+
+    const helados = {
+      revenue: heladoSales.reduce((sum, sale) => sum + sale.amount, 0),
+      units: heladoSales.reduce((sum, sale) => sum + sale.quantity, 0),
+      transactions: heladoSales.length,
+      averagePrice: 0
+    }
+    helados.averagePrice = helados.units > 0 ? helados.revenue / helados.units : 0
+
+    // Métricas adicionales
+    const averageRevenuePerTransaction = transactions > 0 ? totalRevenue / transactions : 0
+    
+    const productMix = {
+      refrescosPercentage: totalRevenue > 0 ? (refrescos.revenue / totalRevenue) * 100 : 0,
+      heladosPercentage: totalRevenue > 0 ? (helados.revenue / totalRevenue) * 100 : 0
+    }
+
+    return {
+      employee,
+      totalRevenue,
+      totalUnits,
+      transactions,
+      refrescos,
+      helados,
+      averageRevenuePerTransaction,
+      productMix
+    }
+  }).sort((a, b) => b.totalRevenue - a.totalRevenue) // Ordenar por ingresos descendente
+}

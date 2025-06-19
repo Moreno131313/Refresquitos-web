@@ -39,7 +39,8 @@ import ProductionList from './ProductionList'
 import FinancialCharts from './FinancialCharts'
 import SeparateInventoryCard from './SeparateInventoryCard'
 import InventoryDebugCard from './InventoryDebugCard'
-import { DollarSign, Package, Users, BarChart3, Cloud, CloudOff } from 'lucide-react'
+import TemporalAnalysisDashboard from './TemporalAnalysisDashboard'
+import { DollarSign, Package, Users, BarChart3, Cloud, CloudOff, Calendar } from 'lucide-react'
 import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus, calculateSeparateFinancialAnalysis } from '@/lib/business-logic'
 import { LoginScreen } from './LoginScreen'
 import { Badge } from '@/components/ui/badge'
@@ -309,11 +310,16 @@ export default function FinancialDashboardWithFirebase() {
       
       <div className="container mx-auto p-3 md:p-4 space-y-4 md:space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
             <TabsTrigger value="resumen" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Resumen</span>
               <span className="sm:hidden">Res</span>
+            </TabsTrigger>
+            <TabsTrigger value="temporal" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Análisis</span>
+              <span className="sm:hidden">Ana</span>
             </TabsTrigger>
             <TabsTrigger value="ingresos" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
               <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
@@ -350,6 +356,14 @@ export default function FinancialDashboardWithFirebase() {
               analysis={calculateSeparateFinancialAnalysis(finalProductions, finalIncomes, finalExpenses)}
             />
             <FinancialCharts incomes={finalIncomes} expenses={finalExpenses} />
+          </TabsContent>
+
+          <TabsContent value="temporal" className="space-y-6">
+            <TemporalAnalysisDashboard 
+              productions={finalProductions}
+              incomes={finalIncomes}
+              expenses={finalExpenses}
+            />
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">

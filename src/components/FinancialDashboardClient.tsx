@@ -47,7 +47,8 @@ import SalesAnalysis from './SalesAnalysis'
 import SeparateInventoryCard from './SeparateInventoryCard'
 import InventoryDebugCard from './InventoryDebugCard'
 import MigrationButton from './MigrationButton'
-import { DollarSign, Package, Users, BarChart3 } from 'lucide-react'
+import TemporalAnalysisDashboard from './TemporalAnalysisDashboard'
+import { DollarSign, Package, Users, BarChart3, Calendar } from 'lucide-react'
 import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus, calculateSeparateFinancialAnalysis } from '@/lib/business-logic'
 
 export default function FinancialDashboardClient() {
@@ -521,11 +522,16 @@ export default function FinancialDashboardClient() {
       
       <div className="container mx-auto p-3 md:p-4 space-y-4 md:space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
             <TabsTrigger value="resumen" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Resumen</span>
               <span className="sm:hidden">Res</span>
+            </TabsTrigger>
+            <TabsTrigger value="temporal" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Análisis</span>
+              <span className="sm:hidden">Ana</span>
             </TabsTrigger>
             <TabsTrigger value="ingresos" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
               <DollarSign className="h-3 w-3 md:h-4 md:w-4" />
@@ -600,6 +606,14 @@ export default function FinancialDashboardClient() {
             
             <SalesAnalysis productions={unifiedProductions} incomes={unifiedIncomes} />
             <FinancialCharts incomes={incomes} expenses={expenses} />
+          </TabsContent>
+
+          <TabsContent value="temporal" className="space-y-6">
+            <TemporalAnalysisDashboard 
+              productions={unifiedProductions}
+              incomes={unifiedIncomes}
+              expenses={unifiedExpenses}
+            />
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">
