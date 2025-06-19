@@ -1,19 +1,30 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { isFirebaseAvailable } from '@/lib/firebase'
+import { auth, isAuthAvailable } from '@/lib/firebase'
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
+  updateProfile
+} from 'firebase/auth'
 
 interface User {
   email: string
   name: string
+  uid: string
 }
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, name: string) => void
-  logout: () => void
+  login: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, name: string) => Promise<void>
+  logout: () => Promise<void>
   isAuthenticated: boolean
+  error: string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,80 +32,163 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    console.log('🔄 AuthProvider: Inicializando...')
+    console.log('🔄 AuthProvider: Inicializando Firebase Auth...')
     
-    // Check for stored user session
-    const storedUser = localStorage.getItem('refresquitos-user')
-    console.log('🔍 AuthProvider: Usuario almacenado:', storedUser)
-    
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser)
-        console.log('✅ AuthProvider: Usuario parseado:', parsedUser)
-        setUser(parsedUser)
-      } catch (error) {
-        console.error('❌ AuthProvider: Error parsing stored user:', error)
-        localStorage.removeItem('refresquitos-user')
-      }
+    if (!auth || !isAuthAvailable()) {
+      console.log('⚠️ AuthProvider: Firebase Auth no disponible')
+      setIsLoading(false)
+      return
     }
     
-    setIsLoading(false)
-    console.log('✅ AuthProvider: Inicialización completa')
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      console.log('🔍 AuthProvider: Estado de auth cambió:', firebaseUser?.email)
+      
+      if (firebaseUser) {
+        const userData: User = {
+          email: firebaseUser.email || '',
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario',
+          uid: firebaseUser.uid
+        }
+        console.log('✅ AuthProvider: Usuario autenticado:', userData)
+        setUser(userData)
+      } else {
+        console.log('❌ AuthProvider: Usuario no autenticado')
+        setUser(null)
+      }
+      
+      setIsLoading(false)
+    })
+
+    return () => unsubscribe()
   }, [])
 
-  const login = (email: string, name: string) => {
-    console.log('🔐 AuthProvider: Login iniciado', { email, name })
+  const login = async (email: string, password: string) => {
+    console.log('🔐 AuthProvider: Login iniciado', { email })
+    setError(null)
+    setIsLoading(true)
+    
+    if (!auth || !isAuthAvailable()) {
+      const errorMessage = 'Firebase Auth no está disponible'
+      setError(errorMessage)
+      setIsLoading(false)
+      throw new Error(errorMessage)
+    }
     
     try {
-      const userData = { email, name }
-      console.log('📝 AuthProvider: Creando userData:', userData)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      console.log('✅ AuthProvider: Login exitoso:', userCredential.user.email)
+    } catch (err: any) {
+      console.error('❌ AuthProvider: Error en login:', err)
+      let errorMessage = 'Error de autenticación'
       
-      setUser(userData)
-      console.log('✅ AuthProvider: Usuario establecido en estado')
+      switch (err.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'Usuario no encontrado'
+          break
+        case 'auth/wrong-password':
+          errorMessage = 'Contraseña incorrecta'
+          break
+        case 'auth/invalid-email':
+          errorMessage = 'Email inválido'
+          break
+        case 'auth/too-many-requests':
+          errorMessage = 'Demasiados intentos fallidos. Intenta más tarde'
+          break
+        default:
+          errorMessage = err.message || 'Error desconocido'
+      }
       
-      localStorage.setItem('refresquitos-user', JSON.stringify(userData))
-      console.log('💾 AuthProvider: Usuario guardado en localStorage')
-      
-      // Verificar que se guardó correctamente
-      const saved = localStorage.getItem('refresquitos-user')
-      console.log('🔍 AuthProvider: Verificación guardado:', saved)
-      
-      console.log('🎉 AuthProvider: Login completado exitosamente')
-    } catch (error) {
-      console.error('❌ AuthProvider: Error en login:', error)
-      throw error
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const logout = () => {
+  const register = async (email: string, password: string, name: string) => {
+    console.log('📝 AuthProvider: Registro iniciado', { email, name })
+    setError(null)
+    setIsLoading(true)
+    
+    if (!auth || !isAuthAvailable()) {
+      const errorMessage = 'Firebase Auth no está disponible'
+      setError(errorMessage)
+      setIsLoading(false)
+      throw new Error(errorMessage)
+    }
+    
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      
+      // Actualizar el perfil con el nombre
+      await updateProfile(userCredential.user, {
+        displayName: name
+      })
+      
+      console.log('✅ AuthProvider: Registro exitoso:', userCredential.user.email)
+    } catch (err: any) {
+      console.error('❌ AuthProvider: Error en registro:', err)
+      let errorMessage = 'Error en el registro'
+      
+      switch (err.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'Este email ya está registrado'
+          break
+        case 'auth/weak-password':
+          errorMessage = 'La contraseña debe tener al menos 6 caracteres'
+          break
+        case 'auth/invalid-email':
+          errorMessage = 'Email inválido'
+          break
+        default:
+          errorMessage = err.message || 'Error desconocido'
+      }
+      
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const logout = async () => {
     console.log('🚪 AuthProvider: Logout iniciado')
+    setError(null)
     
-    setUser(null)
-    localStorage.removeItem('refresquitos-user')
+    if (!auth || !isAuthAvailable()) {
+      console.log('⚠️ AuthProvider: Firebase Auth no disponible para logout')
+      setUser(null)
+      return
+    }
     
-    // Clear all app data on logout
-    const keys = Object.keys(localStorage).filter(key => key.startsWith('refresquitos-'))
-    keys.forEach(key => localStorage.removeItem(key))
-    
-    console.log('✅ AuthProvider: Logout completado')
+    try {
+      await signOut(auth)
+      console.log('✅ AuthProvider: Logout exitoso')
+    } catch (err: any) {
+      console.error('❌ AuthProvider: Error en logout:', err)
+      setError('Error al cerrar sesión')
+    }
   }
 
   const value: AuthContextType = {
     user,
     isLoading,
     login,
+    register,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    error
   }
 
   // Debug logging
   console.log('🔍 AuthProvider: Estado actual:', {
-    user,
+    user: user?.email,
     isLoading,
     isAuthenticated: !!user,
-    firebaseAvailable: isFirebaseAvailable()
+    error
   })
 
   return (

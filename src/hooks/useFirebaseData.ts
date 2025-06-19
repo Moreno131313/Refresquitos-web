@@ -287,23 +287,42 @@ export function useFirebaseData() {
 
   // Update functions
   const updateEmployeeCycleStart = async (employee: 'César' | 'Yesid', newStartDate: string) => {
+    console.log('📅 Firebase updateEmployeeCycleStart:', {
+      employee,
+      newStartDate,
+      originalType: typeof newStartDate,
+      timestamp: new Date().toISOString()
+    })
+    
     const activeCycle = employeeCycles.find(cycle => 
       cycle.employee === employee && cycle.isActive
     )
     
     if (activeCycle) {
+      console.log('📝 Actualizando ciclo existente:', {
+        cycleId: activeCycle.id,
+        currentStartDate: activeCycle.startDate,
+        newStartDate
+      })
+      
       const cycleDoc = doc(db, 'users', user?.email || '', 'employeeCycles', activeCycle.id)
       await updateDoc(cycleDoc, {
         startDate: newStartDate,
         updatedAt: new Date().toISOString()
       })
+      
+      console.log('✅ Ciclo actualizado en Firebase')
     } else {
+      console.log('📝 Creando nuevo ciclo:', { employee, newStartDate })
+      
       // Create new cycle if none exists
       await addEmployeeCycle({
         employee,
         startDate: newStartDate,
         isActive: true
       })
+      
+      console.log('✅ Nuevo ciclo creado en Firebase')
     }
   }
 

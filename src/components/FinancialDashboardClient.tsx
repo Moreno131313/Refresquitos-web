@@ -44,6 +44,8 @@ import EnhancedFinancialSummaryCard from './EnhancedFinancialSummary'
 import SaleSimulator from './SaleSimulator'
 import SalesAnalysis from './SalesAnalysis'
 import SeparateInventoryCard from './SeparateInventoryCard'
+import InventoryDebugCard from './InventoryDebugCard'
+import MigrationButton from './MigrationButton'
 import { DollarSign, Package, Users, BarChart3 } from 'lucide-react'
 import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus } from '@/lib/business-logic'
 
@@ -61,7 +63,7 @@ export default function FinancialDashboardClient() {
   
   const { toast } = useToast()
 
-  // Cargar datos del localStorage al inicializar
+  // Cargar datos del localStorage al inicializar CON MIGRACIÓN AUTOMÁTICA
   useEffect(() => {
     const savedIncomes = localStorage.getItem('refresquitos-incomes')
     const savedExpenses = localStorage.getItem('refresquitos-expenses')
@@ -69,9 +71,41 @@ export default function FinancialDashboardClient() {
     const savedAbsences = localStorage.getItem('refresquitos-absences')
     const savedEmployeeCycles = localStorage.getItem('refresquitos-employee-cycles')
 
-    if (savedIncomes) setIncomes(JSON.parse(savedIncomes))
+    // MIGRACIÓN AUTOMÁTICA DE INGRESOS
+    if (savedIncomes) {
+      const parsedIncomes = JSON.parse(savedIncomes)
+      const migratedIncomes = parsedIncomes.map((income: any) => ({
+        ...income,
+        // Asignar producto basado en amount o defaultear a Refresco
+        product: income.product || (income.amount / income.quantity === 1800 ? 'Helado' : 'Refresco')
+      }))
+      setIncomes(migratedIncomes)
+      
+      // Guardar datos migrados inmediatamente
+      if (JSON.stringify(parsedIncomes) !== JSON.stringify(migratedIncomes)) {
+        localStorage.setItem('refresquitos-incomes', JSON.stringify(migratedIncomes))
+        console.log('✅ Ingresos migrados automáticamente con campo product')
+      }
+    }
+
+    // MIGRACIÓN AUTOMÁTICA DE PRODUCCIONES
+    if (savedProductions) {
+      const parsedProductions = JSON.parse(savedProductions)
+      const migratedProductions = parsedProductions.map((prod: any) => ({
+        ...prod,
+        // Asignar Refresco por defecto a producciones sin product
+        product: prod.product || 'Refresco'
+      }))
+      setProductions(migratedProductions)
+      
+      // Guardar datos migrados inmediatamente
+      if (JSON.stringify(parsedProductions) !== JSON.stringify(migratedProductions)) {
+        localStorage.setItem('refresquitos-productions', JSON.stringify(migratedProductions))
+        console.log('✅ Producciones migradas automáticamente con campo product')
+      }
+    }
+
     if (savedExpenses) setExpenses(JSON.parse(savedExpenses))
-    if (savedProductions) setProductions(JSON.parse(savedProductions))
     if (savedAbsences) setAbsences(JSON.parse(savedAbsences))
     
     if (savedEmployeeCycles) {
@@ -207,70 +241,123 @@ export default function FinancialDashboardClient() {
 
   // Función para agregar datos de prueba
   const addSampleData = () => {
-    // Agregar producciones de prueba
-    const sampleProductions = [
+    // Datos de prueba con productos separados
+    const sampleProductions: ProductionItem[] = [
       {
         id: generateId(),
-        date: '2024-01-15',
-                 product: 'Refresco' as const,
-         quantity: 100,
+        date: '2025-01-10',
+        quantity: 100,
         materialCosts: [
-          { name: 'Leche x cantina (40litros)', cost: 50000 },
-          { name: 'Azucar x BULTO', cost: 30000 }
+          { name: 'Leche x cantina (40litros)', cost: 15000 },
+          { name: 'Azucar x BULTO', cost: 8000 },
+          { name: 'Maracuya', cost: 5000 },
+          { name: 'Bolsas para empacar refrescos grandes', cost: 2000 }
         ],
-        directLaborCost: 20000,
-        indirectCosts: 10000,
-        totalCost: 110000,
-        costPerUnit: 1100,
+        directLaborCost: 5000,
+        indirectCosts: 3000,
+        totalCost: 38000,
+        costPerUnit: 380,
+        product: 'Refresco',
         createdAt: new Date().toISOString()
       },
       {
         id: generateId(),
-        date: '2024-01-16',
-                 product: 'Helado' as const,
-         quantity: 50,
+        date: '2025-01-11',
+        quantity: 150,
         materialCosts: [
-          { name: 'Leche x cantina (40litros)', cost: 40000 },
-          { name: 'Coco', cost: 25000 }
+          { name: 'Leche x cantina (40litros)', cost: 20000 },
+          { name: 'Azucar x BULTO', cost: 12000 },
+          { name: 'Coco', cost: 8000 },
+          { name: 'Crema de leche litro', cost: 6000 },
+          { name: 'Vasos para helados', cost: 4000 }
         ],
-        directLaborCost: 15000,
-        indirectCosts: 8000,
-        totalCost: 88000,
-        costPerUnit: 1760,
-        createdAt: new Date().toISOString()
-      }
-    ]
-
-    // Agregar ventas de prueba
-    const sampleIncomes = [
-      {
-        id: generateId(),
-        amount: 30000,
-        quantity: 30,
-        date: '2024-01-17',
-        type: 'Venta Empleado' as const,
-                 product: 'Refresco' as const,
-         employee: 'César' as const,
+        directLaborCost: 8000,
+        indirectCosts: 5000,
+        totalCost: 63000,
+        costPerUnit: 420,
+        product: 'Helado',
         createdAt: new Date().toISOString()
       },
       {
         id: generateId(),
-        amount: 36000,
-        quantity: 20,
-        date: '2024-01-18',
-        type: 'Venta Empleado' as const,
-                 product: 'Helado' as const,
-         employee: 'Yesid' as const,
+        date: '2025-01-12',
+        quantity: 200,
+        materialCosts: [
+          { name: 'Leche x cantina (40litros)', cost: 25000 },
+          { name: 'Azucar x BULTO', cost: 15000 },
+          { name: 'Mora', cost: 8000 },
+          { name: 'Bolsas para empacar refrescos grandes', cost: 3000 }
+        ],
+        directLaborCost: 10000,
+        indirectCosts: 6000,
+        totalCost: 67000,
+        costPerUnit: 335,
+        product: 'Refresco',
         createdAt: new Date().toISOString()
       }
     ]
 
-    setProductions(prev => [...sampleProductions, ...prev])
-    setIncomes(prev => [...sampleIncomes, ...prev])
-    
+    const sampleIncomes: IncomeItem[] = [
+      {
+        id: generateId(),
+        amount: 50000, // 50 refrescos × $1,000
+        quantity: 50,
+        date: '2025-01-13',
+        type: 'Venta Empleado',
+        employee: 'César',
+        product: 'Refresco',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: generateId(),
+        amount: 72000, // 40 helados × $1,800
+        quantity: 40,
+        date: '2025-01-13',
+        type: 'Venta Empleado',
+        employee: 'Yesid',
+        product: 'Helado',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: generateId(),
+        amount: 100000, // 100 refrescos × $1,000
+        quantity: 100,
+        date: '2025-01-14',
+        type: 'Venta Directa',
+        product: 'Refresco',
+        createdAt: new Date().toISOString()
+      }
+    ]
+
+    const sampleExpenses: ExpenseItem[] = [
+      {
+        id: generateId(),
+        name: 'Servicios públicos',
+        amount: 80000,
+        date: '2025-01-10',
+        category: 'Costos Fijos',
+        type: 'Mensual',
+        createdAt: new Date().toISOString()
+      }
+    ]
+
+    // Guardar en localStorage
+    const currentProductions = JSON.parse(localStorage.getItem('refresquitos-productions') || '[]')
+    const currentIncomes = JSON.parse(localStorage.getItem('refresquitos-incomes') || '[]')
+    const currentExpenses = JSON.parse(localStorage.getItem('refresquitos-expenses') || '[]')
+
+    localStorage.setItem('refresquitos-productions', JSON.stringify([...currentProductions, ...sampleProductions]))
+    localStorage.setItem('refresquitos-incomes', JSON.stringify([...currentIncomes, ...sampleIncomes]))
+    localStorage.setItem('refresquitos-expenses', JSON.stringify([...currentExpenses, ...sampleExpenses]))
+
+    // Recargar datos
+    setProductions([...productions, ...sampleProductions])
+    setIncomes([...incomes, ...sampleIncomes])
+    setExpenses([...expenses, ...sampleExpenses])
+
     toast({
-      title: "Datos de prueba agregados",
-      description: "Se agregaron producciones y ventas de refrescos y helados para probar el inventario separado",
+      title: "Datos agregados",
+      description: "Se agregaron datos de prueba con productos separados (refrescos y helados)"
     })
   }
 
@@ -303,6 +390,33 @@ export default function FinancialDashboardClient() {
     toast({
       title: "Nuevo ciclo iniciado",
       description: `Nuevo ciclo de evaluación iniciado para ${employee}`
+    })
+  }
+
+  // Función para migrar datos existentes sin campo product
+  const migrateDataToSeparateProducts = () => {
+    // Migrar producciones sin producto
+    const migratedProductions = productions.map(prod => {
+      if (!(prod as any).product) {
+        return { ...prod, product: 'Refresco' as const }
+      }
+      return prod
+    })
+    
+    // Migrar ingresos sin producto
+    const migratedIncomes = incomes.map(income => {
+      if (!(income as any).product) {
+        return { ...income, product: 'Refresco' as const }
+      }
+      return income
+    })
+    
+    setProductions(migratedProductions)
+    setIncomes(migratedIncomes)
+    
+    toast({
+      title: "Datos migrados",
+      description: "Los datos existentes sin producto asignado han sido migrados como 'Refresco'",
     })
   }
 
@@ -428,8 +542,37 @@ export default function FinancialDashboardClient() {
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
+            <InventoryDebugCard 
+              productions={unifiedProductions} 
+              incomes={unifiedIncomes} 
+              inventoryStatus={separateInventoryStatus}
+              onMigrateData={migrateDataToSeparateProducts}
+            />
+            <MigrationButton />
             <EnhancedFinancialSummaryCard summary={enhancedFinancialSummary} />
-            <SeparateInventoryCard inventoryStatus={separateInventoryStatus} />
+            
+            {/* DEBUG: Mostrar datos brutos */}
+            <Card className="border-2 border-purple-300 bg-purple-50">
+              <CardHeader>
+                <CardTitle className="text-purple-800">🔧 DEBUG: Datos del Inventario</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm space-y-2">
+                  <p><strong>Producciones totales:</strong> {unifiedProductions.length}</p>
+                  <p><strong>Refrescos producidos:</strong> {unifiedProductions.filter(p => p.product === 'Refresco').length}</p>
+                  <p><strong>Helados producidos:</strong> {unifiedProductions.filter(p => p.product === 'Helado').length}</p>
+                  <p><strong>Ingresos totales:</strong> {unifiedIncomes.length}</p>
+                  <p><strong>Ventas de refrescos:</strong> {unifiedIncomes.filter(i => i.product === 'Refresco').length}</p>
+                  <p><strong>Ventas de helados:</strong> {unifiedIncomes.filter(i => i.product === 'Helado').length}</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* INVENTARIO SEPARADO - DEBE APARECER AQUÍ */}
+            <SeparateInventoryCard 
+              inventoryStatus={separateInventoryStatus} 
+              onForceRefresh={migrateDataToSeparateProducts}
+            />
             
             {/* Botón para datos de prueba - solo mostrar si no hay datos */}
             {productions.length === 0 && incomes.length === 0 && (

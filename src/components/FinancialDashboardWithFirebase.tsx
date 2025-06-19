@@ -37,8 +37,10 @@ import IncomeList from './IncomeList'
 import ExpenseList from './ExpenseList'
 import ProductionList from './ProductionList'
 import FinancialCharts from './FinancialCharts'
+import SeparateInventoryCard from './SeparateInventoryCard'
+import InventoryDebugCard from './InventoryDebugCard'
 import { DollarSign, Package, Users, BarChart3, Cloud, CloudOff } from 'lucide-react'
-import { calculateEnhancedFinancialSummary } from '@/lib/business-logic'
+import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus } from '@/lib/business-logic'
 import { LoginScreen } from './LoginScreen'
 import { Badge } from '@/components/ui/badge'
 
@@ -71,6 +73,35 @@ export default function FinancialDashboardWithFirebase() {
   const [showMigration, setShowMigration] = useState(false)
   const { toast } = useToast()
 
+  // TEMPORAL: Cargar datos directamente de localStorage para testing
+  const [localData, setLocalData] = useState({
+    productions: [] as Production[],
+    incomes: [] as Income[],
+    expenses: [] as Expense[]
+  })
+
+  useEffect(() => {
+    try {
+      const localProductions = localStorage.getItem('refresquitos-productions')
+      const localIncomes = localStorage.getItem('refresquitos-incomes')
+      const localExpenses = localStorage.getItem('refresquitos-expenses')
+
+      setLocalData({
+        productions: localProductions ? JSON.parse(localProductions) : [],
+        incomes: localIncomes ? JSON.parse(localIncomes) : [],
+        expenses: localExpenses ? JSON.parse(localExpenses) : []
+      })
+      
+      console.log('📦 Datos localStorage cargados:', {
+        productions: localProductions ? JSON.parse(localProductions).length : 0,
+        incomes: localIncomes ? JSON.parse(localIncomes).length : 0,
+        expenses: localExpenses ? JSON.parse(localExpenses).length : 0
+      })
+    } catch (error) {
+      console.error('Error cargando datos localStorage:', error)
+    }
+  }, [user])
+
   // Debug logging
   console.log('🔍 FinancialDashboard: Estado de renderizado:', {
     user,
@@ -101,7 +132,9 @@ export default function FinancialDashboardWithFirebase() {
 
     if (user && hasLocalData()) {
       console.log('📦 FinancialDashboard: Datos locales encontrados, mostrando migración')
-      setShowMigration(true)
+      // FORZAR que NO muestre la migración para probar el inventario
+      // setShowMigration(true)
+      setShowMigration(false)
     } else {
       console.log('📦 FinancialDashboard: No hay datos locales o no hay usuario')
     }
@@ -138,6 +171,17 @@ export default function FinancialDashboardWithFirebase() {
   }
 
   console.log('🎉 FinancialDashboard: Renderizando dashboard principal')
+
+  // TEMPORAL: Usar datos de localStorage para testing
+  const finalIncomes = localData.incomes.length > 0 ? localData.incomes : incomes
+  const finalProductions = localData.productions.length > 0 ? localData.productions : productions  
+  const finalExpenses = localData.expenses.length > 0 ? localData.expenses : expenses
+
+  console.log('📊 Datos finales a usar:', {
+    incomes: finalIncomes.length,
+    productions: finalProductions.length,
+    expenses: finalExpenses.length
+  })
 
   // Wrapper functions to handle form submissions
   const handleAddIncome = (incomeData: IncomeFormData) => {
@@ -200,8 +244,8 @@ export default function FinancialDashboardWithFirebase() {
 
   // Calculate financial summary
   const financialSummary: FinancialSummary = {
-    totalIncome: incomes.reduce((sum, income) => sum + income.amount, 0),
-    totalExpenses: expenses.reduce((sum, expense) => sum + expense.amount, 0),
+    totalIncome: finalIncomes.reduce((sum, income) => sum + income.amount, 0),
+    totalExpenses: finalExpenses.reduce((sum, expense) => sum + expense.amount, 0),
     netProfit: 0,
     profitMargin: 0,
     tithe: 0,
@@ -219,13 +263,13 @@ export default function FinancialDashboardWithFirebase() {
 
   // Calculate production summary
   const productionSummary: ProductionSummary = {
-    totalProduced: productions.reduce((sum, prod) => sum + prod.quantity, 0),
-    totalProductionCost: productions.reduce((sum, prod) => sum + prod.totalCost, 0),
+    totalProduced: finalProductions.reduce((sum, prod) => sum + prod.quantity, 0),
+    totalProductionCost: finalProductions.reduce((sum, prod) => sum + prod.totalCost, 0),
     averageCostPerUnit: 0,
     currentInventory: 0,
   }
 
-  const totalSold = incomes.reduce((sum, income) => sum + income.quantity, 0)
+  const totalSold = finalIncomes.reduce((sum, income) => sum + income.quantity, 0)
   productionSummary.currentInventory = productionSummary.totalProduced - totalSold
   productionSummary.averageCostPerUnit = productionSummary.totalProduced > 0 
     ? productionSummary.totalProductionCost / productionSummary.totalProduced 
@@ -294,16 +338,24 @@ export default function FinancialDashboardWithFirebase() {
           </TabsList>
 
           <TabsContent value="resumen" className="space-y-6">
-            <EnhancedFinancialSummaryCard 
-              summary={calculateEnhancedFinancialSummary(productions, incomes, expenses)}
+            <SeparateInventoryCard 
+              inventoryStatus={getSeparateInventoryStatus(finalProductions, finalIncomes)}
             />
-            <FinancialCharts incomes={incomes} expenses={expenses} />
+            <InventoryDebugCard 
+              productions={finalProductions}
+              incomes={finalIncomes}
+              inventoryStatus={getSeparateInventoryStatus(finalProductions, finalIncomes)}
+            />
+            <EnhancedFinancialSummaryCard 
+              summary={calculateEnhancedFinancialSummary(finalProductions, finalIncomes, finalExpenses)}
+            />
+            <FinancialCharts incomes={finalIncomes} expenses={finalExpenses} />
           </TabsContent>
 
           <TabsContent value="ingresos" className="space-y-6">
             <SaleSimulator 
-              productions={productions}
-              incomes={incomes}
+              productions={finalProductions}
+              incomes={finalIncomes}
             />
             <Card>
               <CardHeader>
@@ -317,10 +369,10 @@ export default function FinancialDashboardWithFirebase() {
               </CardContent>
             </Card>
             <SalesAnalysis 
-              incomes={incomes}
-              productions={productions}
+              incomes={finalIncomes}
+              productions={finalProductions}
             />
-            <IncomeList incomes={incomes} onDelete={firebaseDeleteIncome} />
+            <IncomeList incomes={finalIncomes} onDelete={firebaseDeleteIncome} />
           </TabsContent>
 
           <TabsContent value="gastos" className="space-y-6">
@@ -335,7 +387,7 @@ export default function FinancialDashboardWithFirebase() {
                 <ExpenseForm onSubmit={handleAddExpense} />
               </CardContent>
             </Card>
-            <ExpenseList expenses={expenses} onDelete={firebaseDeleteExpense} />
+            <ExpenseList expenses={finalExpenses} onDelete={firebaseDeleteExpense} />
           </TabsContent>
 
           <TabsContent value="produccion" className="space-y-6">
@@ -350,12 +402,12 @@ export default function FinancialDashboardWithFirebase() {
                 <ProductionForm onSubmit={handleAddProduction} />
               </CardContent>
             </Card>
-            <ProductionList productions={productions} onDelete={firebaseDeleteProduction} />
+            <ProductionList productions={finalProductions} onDelete={firebaseDeleteProduction} />
           </TabsContent>
 
           <TabsContent value="empleados" className="space-y-6">
             <EnhancedEmployeeDashboard 
-              incomes={incomes}
+              incomes={finalIncomes}
               absences={absences}
               employeeCycleInfoList={employeeCycleInfoList}
               bonuses={bonuses}

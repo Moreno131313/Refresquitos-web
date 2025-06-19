@@ -21,7 +21,18 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  let dateObj: Date
+  
+  if (typeof date === 'string') {
+    // Si es un string en formato YYYY-MM-DD, usar createLocalDate para evitar problemas de timezone
+    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      dateObj = createLocalDate(date)
+    } else {
+      dateObj = new Date(date)
+    }
+  } else {
+    dateObj = date
+  }
   
   const defaultOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',

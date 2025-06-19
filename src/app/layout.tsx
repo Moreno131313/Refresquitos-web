@@ -3,8 +3,14 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import FirebaseStatus from '@/components/FirebaseStatus'
+// Importar utilidades de migración para que estén disponibles globalmente
+import '@/utils/migration'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter'
+})
 
 export const metadata: Metadata = {
   title: 'Refresquitos Manager',
@@ -24,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
+    <html lang="es" className={inter.variable}>
+      <body className={`${inter.className} antialiased`}>
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
           {children}
         </div>
