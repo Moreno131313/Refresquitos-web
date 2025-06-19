@@ -218,11 +218,19 @@ export function useFirebaseData() {
     const pricePerUnit = incomeData.product === 'Helado' ? 1800 : 1000
     const amount = incomeData.quantity * pricePerUnit
     
-    const income: Omit<Income, 'id'> = {
-      ...incomeData,
+    // Crear el objeto income base sin campos undefined
+    const income: any = {
+      quantity: incomeData.quantity,
+      product: incomeData.product,
+      type: incomeData.type,
       amount,
       createdAt: new Date().toISOString(),
       date: incomeData.date || new Date().toISOString().split('T')[0]
+    }
+    
+    // Solo incluir employee si tiene un valor válido
+    if (incomeData.employee && incomeData.employee.trim() !== '') {
+      income.employee = incomeData.employee
     }
     
     await addDoc(collection, income)

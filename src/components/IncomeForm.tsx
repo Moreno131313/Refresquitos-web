@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
@@ -33,8 +34,26 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
   const watchedType = watch('type')
   const watchedProduct = watch('product')
 
+  // Limpiar el campo employee cuando el tipo cambie a algo diferente de "Venta Empleado"
+  useEffect(() => {
+    if (watchedType !== 'Venta Empleado') {
+      // No resetear todo el formulario, solo limpiar el employee
+      setValue('employee', undefined)
+    }
+  }, [watchedType, setValue])
+
   const handleFormSubmit = (data: IncomeFormData) => {
-    onSubmit(data)
+    // Si no es venta empleado, eliminar el campo employee
+    const processedData = data.type !== 'Venta Empleado' 
+      ? { ...data, employee: undefined }
+      : data;
+    
+    // Limpiar strings vacíos en employee
+    if (processedData.employee === '') {
+      processedData.employee = undefined;
+    }
+    
+    onSubmit(processedData)
     reset({
       date: getCurrentDate(),
       quantity: 1,
@@ -124,12 +143,12 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
         {watchedType === 'Venta Empleado' && (
           <div className="space-y-2">
             <label htmlFor="employee" className="text-sm font-medium">
-              Empleado
+              Empleado <span className="text-red-500">*</span>
             </label>
             <select
               id="employee"
               {...register('employee')}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${errors.employee ? 'border-red-500' : ''}`}
             >
               <option value="">Seleccionar empleado</option>
               <option value="César">César</option>

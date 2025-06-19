@@ -5,8 +5,18 @@ export const incomeSchema = z.object({
   quantity: z.number().min(1, 'La cantidad debe ser mayor a 0'),
   product: z.enum(['Refresco', 'Helado']),
   type: z.enum(['Venta Empleado', 'Pedido Puerto López', 'Pedido Puerto Gaitán', 'Paca Villavicencio']),
-  employee: z.enum(['César', 'Yesid']).optional(),
+  employee: z.string().optional(),
   date: z.string().min(1, 'La fecha es requerida'),
+}).refine((data) => {
+  // Si es venta empleado, el empleado es requerido y debe ser uno de los válidos
+  if (data.type === 'Venta Empleado') {
+    return data.employee && data.employee.trim() !== '' && ['César', 'Yesid'].includes(data.employee);
+  }
+  // Para otros tipos de venta, el empleado puede estar vacío o no estar definido
+  return true;
+}, {
+  message: 'Debe seleccionar un empleado válido para ventas de empleado',
+  path: ['employee']
 });
 
 export const expenseSchema = z.object({

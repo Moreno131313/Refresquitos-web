@@ -186,10 +186,13 @@ export default function FinancialDashboardWithFirebase() {
 
   // Wrapper functions to handle form submissions
   const handleAddIncome = (incomeData: IncomeFormData) => {
+    console.log('📊 Intentando agregar ingreso:', incomeData)
+    
     firebaseAddIncome(incomeData).catch(error => {
+      console.error('❌ Error agregando ingreso:', error)
       toast({
         title: "Error",
-        description: "No se pudo agregar el ingreso",
+        description: error?.message || "No se pudo agregar el ingreso",
         variant: "destructive"
       })
     })
