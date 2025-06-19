@@ -11,7 +11,7 @@ import {
   Calculator,
   Target
 } from 'lucide-react'
-import { processAllSales, SaleCalculation } from '@/lib/business-logic'
+import { processAllSalesByProduct, SaleCalculation } from '@/lib/business-logic'
 import { Production, Income } from '@/types/unified'
 
 interface SalesAnalysisProps {
@@ -20,7 +20,7 @@ interface SalesAnalysisProps {
 }
 
 export default function SalesAnalysis({ productions, incomes }: SalesAnalysisProps) {
-  const { salesCalculations, totalCOGS, totalGrossProfit } = processAllSales(productions, incomes)
+  const { salesCalculations, totalCOGS, totalGrossProfit } = processAllSalesByProduct(productions, incomes)
   
   const averageGrossProfitMargin = salesCalculations.length > 0 
     ? salesCalculations.reduce((sum, sale) => sum + sale.grossProfitMargin, 0) / salesCalculations.length

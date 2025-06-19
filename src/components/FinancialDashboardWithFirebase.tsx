@@ -30,7 +30,7 @@ import IncomeForm from './IncomeForm'
 import ExpenseForm from './ExpenseForm'
 import ProductionForm from './ProductionForm'
 import EnhancedEmployeeDashboard from './EnhancedEmployeeDashboard'
-import EnhancedFinancialSummaryCard from './EnhancedFinancialSummary'
+import SeparateFinancialAnalysisCard from './SeparateFinancialAnalysis'
 import SaleSimulator from './SaleSimulator'
 import SalesAnalysis from './SalesAnalysis'
 import IncomeList from './IncomeList'
@@ -40,7 +40,7 @@ import FinancialCharts from './FinancialCharts'
 import SeparateInventoryCard from './SeparateInventoryCard'
 import InventoryDebugCard from './InventoryDebugCard'
 import { DollarSign, Package, Users, BarChart3, Cloud, CloudOff } from 'lucide-react'
-import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus } from '@/lib/business-logic'
+import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus, calculateSeparateFinancialAnalysis } from '@/lib/business-logic'
 import { LoginScreen } from './LoginScreen'
 import { Badge } from '@/components/ui/badge'
 
@@ -346,8 +346,8 @@ export default function FinancialDashboardWithFirebase() {
               incomes={finalIncomes}
               inventoryStatus={getSeparateInventoryStatus(finalProductions, finalIncomes)}
             />
-            <EnhancedFinancialSummaryCard 
-              summary={calculateEnhancedFinancialSummary(finalProductions, finalIncomes, finalExpenses)}
+            <SeparateFinancialAnalysisCard 
+              analysis={calculateSeparateFinancialAnalysis(finalProductions, finalIncomes, finalExpenses)}
             />
             <FinancialCharts incomes={finalIncomes} expenses={finalExpenses} />
           </TabsContent>

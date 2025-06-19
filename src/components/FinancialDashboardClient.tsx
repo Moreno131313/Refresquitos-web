@@ -41,13 +41,14 @@ import ExpenseList from './ExpenseList'
 import ProductionList from './ProductionList'
 import FinancialCharts from './FinancialCharts'
 import EnhancedFinancialSummaryCard from './EnhancedFinancialSummary'
+import SeparateFinancialAnalysisCard from './SeparateFinancialAnalysis'
 import SaleSimulator from './SaleSimulator'
 import SalesAnalysis from './SalesAnalysis'
 import SeparateInventoryCard from './SeparateInventoryCard'
 import InventoryDebugCard from './InventoryDebugCard'
 import MigrationButton from './MigrationButton'
 import { DollarSign, Package, Users, BarChart3 } from 'lucide-react'
-import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus } from '@/lib/business-logic'
+import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus, calculateSeparateFinancialAnalysis } from '@/lib/business-logic'
 
 export default function FinancialDashboardClient() {
   // Hook de autenticación
@@ -323,7 +324,7 @@ export default function FinancialDashboardClient() {
         amount: 100000, // 100 refrescos × $1,000
         quantity: 100,
         date: '2025-01-14',
-        type: 'Venta Directa',
+        type: 'Venta Empleado',
         product: 'Refresco',
         createdAt: new Date().toISOString()
       }
@@ -468,6 +469,13 @@ export default function FinancialDashboardClient() {
     unifiedIncomes
   )
 
+  // Cálculo del análisis financiero separado por producto
+  const separateFinancialAnalysis = calculateSeparateFinancialAnalysis(
+    unifiedProductions,
+    unifiedIncomes,
+    unifiedExpenses
+  )
+
   // Mantener compatibilidad con el resumen anterior
   const financialSummary: FinancialSummary = {
     totalIncome: enhancedFinancialSummary.totalRevenue,
@@ -549,7 +557,7 @@ export default function FinancialDashboardClient() {
               onMigrateData={migrateDataToSeparateProducts}
             />
             <MigrationButton />
-            <EnhancedFinancialSummaryCard summary={enhancedFinancialSummary} />
+            <SeparateFinancialAnalysisCard analysis={separateFinancialAnalysis} />
             
             {/* DEBUG: Mostrar datos brutos */}
             <Card className="border-2 border-purple-300 bg-purple-50">
