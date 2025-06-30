@@ -21,6 +21,8 @@ import {
   getEmployeeSalesAnalysis
 } from '@/lib/business-logic'
 import type { Production, Income, Expense } from '@/types/unified'
+import ExportButtons, { ExportInfo } from './ExportButtons'
+import type { ExportData } from '@/utils/exportUtils'
 
 interface TemporalAnalysisDashboardProps {
   productions: Production[]
@@ -81,6 +83,76 @@ export default function TemporalAnalysisDashboard({
         return null
     }
   }, [analysisType, selectedYear, selectedMonth, customStartDate, customEndDate, productions, incomes, expenses])
+
+  // Preparar datos para exportación
+  const exportData: ExportData | null = useMemo(() => {
+    if (!analysis || !selectedYear) return null
+
+    const getTitle = () => {
+      switch (analysisType) {
+        case 'monthly':
+          return `Análisis Mensual - ${selectedMonth}/${selectedYear}`
+        case 'annual':
+          return `Análisis Anual - ${selectedYear}`
+        case 'custom':
+          return `Análisis Personalizado - ${customStartDate} a ${customEndDate}`
+        default:
+          return 'Análisis Temporal'
+      }
+    }
+
+    const getPeriod = () => {
+      switch (analysisType) {
+        case 'monthly':
+          return `${selectedMonth?.toString().padStart(2, '0')}/${selectedYear}`
+        case 'annual':
+          return selectedYear.toString()
+        case 'custom':
+          return `${customStartDate} a ${customEndDate}`
+        default:
+          return ''
+      }
+    }
+
+    const getDateRange = () => {
+      switch (analysisType) {
+        case 'monthly':
+          const startDate = `${selectedYear}-${selectedMonth?.toString().padStart(2, '0')}-01`
+          const endDate = `${selectedYear}-${selectedMonth?.toString().padStart(2, '0')}-31`
+          return { startDate, endDate }
+        case 'annual':
+          return { 
+            startDate: `${selectedYear}-01-01`, 
+            endDate: `${selectedYear}-12-31` 
+          }
+        case 'custom':
+          return { 
+            startDate: customStartDate, 
+            endDate: customEndDate 
+          }
+        default:
+          return { startDate: '', endDate: '' }
+      }
+    }
+
+    const { startDate, endDate } = getDateRange()
+
+    return {
+      type: analysis.type,
+      title: getTitle(),
+      period: getPeriod(),
+      analysis: analysis.data,
+      salesBreakdown: getSalesTypeBreakdown(startDate, endDate, incomes),
+      employeeAnalysis: getEmployeeSalesAnalysis(startDate, endDate, incomes),
+      productions,
+      incomes: incomes.filter(income => 
+        income.date >= startDate && income.date <= endDate
+      ),
+      expenses: expenses.filter(expense => 
+        expense.date >= startDate && expense.date <= endDate
+      )
+    }
+  }, [analysis, analysisType, selectedYear, selectedMonth, customStartDate, customEndDate, incomes, expenses, productions])
 
   const renderTrendIcon = (trend: 'CRECIENTE' | 'ESTABLE' | 'DECRECIENTE') => {
     switch (trend) {
@@ -1121,28 +1193,39 @@ export default function TemporalAnalysisDashboard({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button
-              variant={analysisType === 'monthly' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setAnalysisType('monthly')}
-            >
-              Mensual
-            </Button>
-            <Button
-              variant={analysisType === 'annual' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setAnalysisType('annual')}
-            >
-              Anual
-            </Button>
-            <Button
-              variant={analysisType === 'custom' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setAnalysisType('custom')}
-            >
-              Período Personalizado
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex gap-2">
+              <Button
+                variant={analysisType === 'monthly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAnalysisType('monthly')}
+              >
+                Mensual
+              </Button>
+              <Button
+                variant={analysisType === 'annual' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAnalysisType('annual')}
+              >
+                Anual
+              </Button>
+              <Button
+                variant={analysisType === 'custom' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAnalysisType('custom')}
+              >
+                Período Personalizado
+              </Button>
+            </div>
+            
+            {exportData && (
+              <ExportButtons
+                elementId="temporal-analysis-content"
+                exportData={exportData}
+                disabled={!analysis}
+                className="flex-shrink-0"
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1225,12 +1308,12 @@ export default function TemporalAnalysisDashboard({
       </Card>
 
       {analysis && (
-        <>
+        <div id="temporal-analysis-content">
           {analysis.type === 'annual' 
             ? renderAnnualAnalysis(analysis.data as AnnualAnalysis)
             : renderPeriodAnalysis(analysis.data as PeriodAnalysis)
           }
-        </>
+        </div>
       )}
 
       {!analysis && (
@@ -1246,6 +1329,8 @@ export default function TemporalAnalysisDashboard({
           </CardContent>
         </Card>
       )}
+
+      {exportData && <ExportInfo />}
     </div>
   )
 } 

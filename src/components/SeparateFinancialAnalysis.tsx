@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,14 +10,52 @@ import {
   DollarSign,
   Package
 } from 'lucide-react'
-import { SeparateFinancialAnalysis } from '@/lib/business-logic'
+import { SeparateFinancialAnalysis, PeriodAnalysis } from '@/lib/business-logic'
+import ExportButtons, { ExportInfo } from './ExportButtons'
+import type { ExportData } from '@/utils/exportUtils'
+import type { Production, Income, Expense } from '@/types/unified'
 
 interface SeparateFinancialAnalysisProps {
   analysis: SeparateFinancialAnalysis
+  productions?: Production[]
+  incomes?: Income[]
+  expenses?: Expense[]
+  period?: string
+  title?: string
 }
 
-export default function SeparateFinancialAnalysisCard({ analysis }: SeparateFinancialAnalysisProps) {
+export default function SeparateFinancialAnalysisCard({ 
+  analysis, 
+  productions = [], 
+  incomes = [], 
+  expenses = [],
+  period = 'General',
+  title = 'Análisis Financiero Separado'
+}: SeparateFinancialAnalysisProps) {
   const { refrescos, helados, combined } = analysis
+
+  // Preparar datos para exportación
+  const exportData: ExportData = {
+    type: 'custom',
+    title,
+    period,
+    analysis: {
+      totalRevenue: combined.totalRevenue,
+      netProfit: combined.netProfit,
+      netProfitMargin: combined.netProfitMargin,
+      totalCOGS: combined.totalCOGS,
+      grossProfit: combined.grossProfit,
+      grossProfitMargin: combined.grossProfitMargin,
+      operatingExpenses: combined.operatingExpenses,
+      totalUnitsSold: combined.totalUnitsSold,
+      averageRevenuePerUnit: combined.totalRevenue / combined.totalUnitsSold,
+      averageCostPerUnit: combined.totalCOGS / combined.totalUnitsSold,
+      trend: combined.netProfit > 0 ? 'CRECIENTE' : combined.netProfit === 0 ? 'ESTABLE' : 'DECRECIENTE'
+    } as any, // Usamos any para evitar conflictos de tipos en este caso específico
+    productions,
+    incomes,
+    expenses
+  }
 
   const RefrescoCard = () => (
     <Card className="refresquitos-card border-l-4 border-l-blue-500">
@@ -289,17 +327,36 @@ export default function SeparateFinancialAnalysisCard({ analysis }: SeparateFina
 
   return (
     <div className="space-y-6">
-      {/* Análisis individual por producto */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RefrescoCard />
-        <HeladoCard />
+      {/* Header con botones de exportación */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <p className="text-sm text-gray-600">Período: {period}</p>
+        </div>
+        <ExportButtons
+          elementId="financial-analysis-content"
+          exportData={exportData}
+          className="flex-shrink-0"
+        />
       </div>
       
-      {/* Resumen total */}
-      <CombinedSummaryCard />
+      <div id="financial-analysis-content">
+        {/* Análisis individual por producto */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <RefrescoCard />
+          <HeladoCard />
+        </div>
+        
+        {/* Resumen total */}
+        <div className="mb-6">
+          <CombinedSummaryCard />
+        </div>
+        
+        {/* Resultado neto final */}
+        <NetResultCard />
+      </div>
       
-      {/* Resultado neto final */}
-      <NetResultCard />
+      <ExportInfo />
     </div>
   )
 } 

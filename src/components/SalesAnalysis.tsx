@@ -12,14 +12,25 @@ import {
   Target
 } from 'lucide-react'
 import { processAllSalesByProduct, SaleCalculation } from '@/lib/business-logic'
-import { Production, Income } from '@/types/unified'
+import { Production, Income, Expense } from '@/types/unified'
+import ExportButtons, { ExportInfo } from './ExportButtons'
+import type { ExportData } from '@/utils/exportUtils'
 
 interface SalesAnalysisProps {
   productions: Production[]
   incomes: Income[]
+  expenses?: Expense[]
+  period?: string
+  title?: string
 }
 
-export default function SalesAnalysis({ productions, incomes }: SalesAnalysisProps) {
+export default function SalesAnalysis({ 
+  productions, 
+  incomes, 
+  expenses = [],
+  period = 'General',
+  title = 'Análisis de Ventas'
+}: SalesAnalysisProps) {
   const { salesCalculations, totalCOGS, totalGrossProfit } = processAllSalesByProduct(productions, incomes)
   
   const averageGrossProfitMargin = salesCalculations.length > 0 
@@ -29,6 +40,34 @@ export default function SalesAnalysis({ productions, incomes }: SalesAnalysisPro
   const profitableSales = salesCalculations.filter(sale => sale.grossProfit > 0).length
   const breakEvenSales = salesCalculations.filter(sale => sale.grossProfit === 0).length
   const losingSales = salesCalculations.filter(sale => sale.grossProfit < 0).length
+
+  // Preparar datos para exportación
+  const totalRevenue = incomes.reduce((sum, income) => sum + income.amount, 0)
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+  const netProfit = totalGrossProfit - totalExpenses
+  const totalUnitsSold = incomes.reduce((sum, income) => sum + income.quantity, 0)
+  
+  const exportData: ExportData = {
+    type: 'custom',
+    title,
+    period,
+    analysis: {
+      totalRevenue,
+      netProfit,
+      netProfitMargin: totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0,
+      totalCOGS,
+      grossProfit: totalGrossProfit,
+      grossProfitMargin: totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0,
+      operatingExpenses: totalExpenses,
+      totalUnitsSold,
+      averageRevenuePerUnit: totalUnitsSold > 0 ? totalRevenue / totalUnitsSold : 0,
+      averageCostPerUnit: totalUnitsSold > 0 ? totalCOGS / totalUnitsSold : 0,
+      trend: netProfit > 0 ? 'CRECIENTE' : netProfit === 0 ? 'ESTABLE' : 'DECRECIENTE'
+    } as any,
+    productions,
+    incomes,
+    expenses
+  }
 
   if (salesCalculations.length === 0) {
     return (
@@ -51,8 +90,22 @@ export default function SalesAnalysis({ productions, incomes }: SalesAnalysisPro
 
   return (
     <div className="space-y-6">
-      {/* Resumen del Análisis */}
-      <Card className="refresquitos-card">
+      {/* Header con botones de exportación */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <p className="text-sm text-gray-600">Período: {period}</p>
+        </div>
+        <ExportButtons
+          elementId="sales-analysis-content"
+          exportData={exportData}
+          className="flex-shrink-0"
+        />
+      </div>
+      
+      <div id="sales-analysis-content">
+        {/* Resumen del Análisis */}
+        <Card className="refresquitos-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-blue-600" />
@@ -182,6 +235,9 @@ export default function SalesAnalysis({ productions, incomes }: SalesAnalysisPro
           </div>
         </CardContent>
       </Card>
+      </div>
+      
+      <ExportInfo />
     </div>
   )
 } 
