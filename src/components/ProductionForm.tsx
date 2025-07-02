@@ -11,7 +11,7 @@ interface ProductionFormProps {
 }
 
 export default function ProductionForm({ onSubmit }: ProductionFormProps) {
-  const [product, setProduct] = useState<'Refresco' | 'Helado'>('Refresco')
+  const [product, setProduct] = useState<'Refresco' | 'Helado' | 'Paca'>('Refresco')
   const [quantity, setQuantity] = useState(1)
   const [directLaborCost, setDirectLaborCost] = useState(0)
   const [indirectCosts, setIndirectCosts] = useState(0)
@@ -58,11 +58,12 @@ export default function ProductionForm({ onSubmit }: ProductionFormProps) {
           <label className="text-sm font-medium">Producto</label>
           <select
             value={product}
-            onChange={(e) => setProduct(e.target.value as 'Refresco' | 'Helado')}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            onChange={(e) => setProduct(e.target.value as 'Refresco' | 'Helado' | 'Paca')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="Refresco">Refresco ($1,000)</option>
-            <option value="Helado">Helado ($1,800)</option>
+            <option value="Refresco">🥤 Refresco</option>
+            <option value="Helado">🍦 Helado</option>
+            <option value="Paca">📦 Paca (Refrescos Pequeños)</option>
           </select>
         </div>
 

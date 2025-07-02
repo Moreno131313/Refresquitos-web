@@ -25,7 +25,7 @@ interface SaleSimulatorProps {
 
 export default function SaleSimulator({ productions, incomes, onProceedWithSale }: SaleSimulatorProps) {
   const [quantity, setQuantity] = useState<number>(1)
-  const [product, setProduct] = useState<'Refresco' | 'Helado'>('Refresco')
+  const [product, setProduct] = useState<'Refresco' | 'Helado' | 'Paca'>('Refresco')
   const [simulation, setSimulation] = useState<ReturnType<typeof calculatePotentialSaleByProduct> | null>(null)
 
   const handleSimulate = () => {
@@ -46,12 +46,12 @@ export default function SaleSimulator({ productions, incomes, onProceedWithSale 
     }
   }
 
-  const handleProductChange = (newProduct: 'Refresco' | 'Helado') => {
+  const handleProductChange = (newProduct: 'Refresco' | 'Helado' | 'Paca') => {
     setProduct(newProduct)
-    if (quantity > 0) {
-      const result = calculatePotentialSaleByProduct(quantity, newProduct, productions, incomes)
-      setSimulation(result)
-    }
+    
+    // Calcular simulación para el nuevo producto
+    const simulation = calculatePotentialSaleByProduct(quantity, newProduct, productions, incomes)
+    setSimulation(simulation)
   }
 
   const getProfitColor = () => {
@@ -83,22 +83,15 @@ export default function SaleSimulator({ productions, incomes, onProceedWithSale 
         {/* Selector de Producto */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Producto</label>
-          <div className="flex gap-2">
-            <Button
-              variant={product === 'Refresco' ? 'default' : 'outline'}
-              onClick={() => handleProductChange('Refresco')}
-              className="flex-1"
-            >
-              Refresco ($1,000)
-            </Button>
-            <Button
-              variant={product === 'Helado' ? 'default' : 'outline'}
-              onClick={() => handleProductChange('Helado')}
-              className="flex-1"
-            >
-              Helado ($1,800)
-            </Button>
-          </div>
+          <select
+            value={product}
+            onChange={(e) => handleProductChange(e.target.value as 'Refresco' | 'Helado' | 'Paca')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="Refresco">🥤 Refresco ($1,000)</option>
+            <option value="Helado">🍦 Helado ($1,800)</option>
+            <option value="Paca">📦 Paca ($9,000)</option>
+          </select>
         </div>
 
         {/* Input de Cantidad */}
@@ -143,7 +136,7 @@ export default function SaleSimulator({ productions, incomes, onProceedWithSale 
                   {formatCurrency(simulation.revenue)}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {quantity} × ${product === 'Helado' ? '1,800' : '1,000'}
+                  {quantity} × ${product === 'Helado' ? '1,800' : product === 'Paca' ? '9,000' : '1,000'}
                 </p>
               </div>
 

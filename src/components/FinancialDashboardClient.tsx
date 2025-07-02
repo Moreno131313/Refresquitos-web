@@ -144,10 +144,12 @@ export default function FinancialDashboardClient() {
   }, [employeeCycleInfoList])
 
   // Funciones para manejar ingresos
-  const addIncome = (incomeData: Omit<IncomeItem, 'id' | 'createdAt' | 'amount'>) => {
+  const addIncome = (incomeData: any) => {
     // Calcular precio según el producto
-    const pricePerUnit = (incomeData as any).product === 'Helado' ? 1800 : 1000
+    const pricePerUnit = incomeData.product === 'Helado' ? 1800 : incomeData.product === 'Paca' ? 9000 : 1000
     const amount = incomeData.quantity * pricePerUnit
+    
+    // Convertir IncomeFormData a IncomeItem
     const newIncome: IncomeItem = {
       ...incomeData,
       id: generateId(),
@@ -157,7 +159,7 @@ export default function FinancialDashboardClient() {
     setIncomes(prev => [newIncome, ...prev])
     toast({
       title: "Ingreso registrado",
-      description: `Se registró una venta de ${incomeData.quantity} ${(incomeData as any).product || 'Refresco'}s por ${formatCurrency(amount)}`,
+      description: `Se registró una venta de ${incomeData.quantity} ${incomeData.product}s por ${formatCurrency(amount)}`,
     })
   }
 
@@ -575,9 +577,11 @@ export default function FinancialDashboardClient() {
                   <p><strong>Producciones totales:</strong> {unifiedProductions.length}</p>
                   <p><strong>Refrescos producidos:</strong> {unifiedProductions.filter(p => p.product === 'Refresco').length}</p>
                   <p><strong>Helados producidos:</strong> {unifiedProductions.filter(p => p.product === 'Helado').length}</p>
+                  <p><strong>Pacas producidas:</strong> {unifiedProductions.filter(p => p.product === 'Paca').length}</p>
                   <p><strong>Ingresos totales:</strong> {unifiedIncomes.length}</p>
                   <p><strong>Ventas de refrescos:</strong> {unifiedIncomes.filter(i => i.product === 'Refresco').length}</p>
                   <p><strong>Ventas de helados:</strong> {unifiedIncomes.filter(i => i.product === 'Helado').length}</p>
+                  <p><strong>Ventas de pacas:</strong> {unifiedIncomes.filter(i => i.product === 'Paca').length}</p>
                 </div>
               </CardContent>
             </Card>
@@ -622,7 +626,7 @@ export default function FinancialDashboardClient() {
                 <CardHeader>
                   <CardTitle>Registrar Nuevo Ingreso</CardTitle>
                   <CardDescription>
-                    Registra las ventas de refrescos ($1,000) y helados ($1,800). El precio se calcula automáticamente según el producto.
+                    Registra las ventas de refrescos ($1,000), helados ($1,800) y pacas ($9,000). El precio se calcula automáticamente según el producto.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

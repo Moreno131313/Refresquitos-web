@@ -61,9 +61,10 @@ export default function TemporalAnalysisDashboard({
     switch (analysisType) {
       case 'monthly':
         if (!selectedMonth) return null
+        const monthlyData = generateMonthlyAnalysis(selectedYear, selectedMonth, productions, incomes, expenses)
         return {
           type: 'monthly' as const,
-          data: generateMonthlyAnalysis(selectedYear, selectedMonth, productions, incomes, expenses)
+          data: monthlyData
         }
       
       case 'annual':
@@ -176,19 +177,27 @@ export default function TemporalAnalysisDashboard({
     }
   }
 
+  const getProductIcon = (product: 'Refresco' | 'Helado' | 'Paca') => {
+    switch (product) {
+      case 'Refresco': return '🥤'
+      case 'Helado': return '🍦'
+      case 'Paca': return '📦'
+    }
+  }
+
+  const getProductColor = (product: 'Refresco' | 'Helado' | 'Paca') => {
+    switch (product) {
+      case 'Refresco': return 'text-blue-600'
+      case 'Helado': return 'text-pink-600'
+      case 'Paca': return 'text-orange-600'
+    }
+  }
+
   const renderSalesTypeBreakdown = (startDate: string, endDate: string) => {
     const salesTypes = getSalesTypeBreakdown(startDate, endDate, incomes)
     
     if (salesTypes.length === 0) {
       return null
-    }
-
-    const getProductIcon = (product: 'Refresco' | 'Helado') => {
-      return product === 'Refresco' ? '🥤' : '🍦'
-    }
-
-    const getProductColor = (product: 'Refresco' | 'Helado') => {
-      return product === 'Refresco' ? 'blue' : 'purple'
     }
 
     return (
@@ -208,23 +217,32 @@ export default function TemporalAnalysisDashboard({
               return (
                 <div 
                   key={index} 
-                  className={salesType.product === 'Refresco' 
-                    ? 'bg-blue-50 border border-blue-200 rounded-lg p-4'
-                    : 'bg-purple-50 border border-purple-200 rounded-lg p-4'
+                  className={
+                    salesType.product === 'Refresco' 
+                      ? 'bg-blue-50 border border-blue-200 rounded-lg p-4'
+                      : salesType.product === 'Helado'
+                      ? 'bg-purple-50 border border-purple-200 rounded-lg p-4'
+                      : 'bg-orange-50 border border-orange-200 rounded-lg p-4'
                   }
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{productIcon}</span>
-                      <h4 className={salesType.product === 'Refresco' 
-                        ? 'font-semibold text-blue-800'
-                        : 'font-semibold text-purple-800'
+                      <h4 className={
+                        salesType.product === 'Refresco' 
+                          ? 'font-semibold text-blue-800'
+                          : salesType.product === 'Helado'
+                          ? 'font-semibold text-purple-800'
+                          : 'font-semibold text-orange-800'
                       }>
                         {salesType.type}
                       </h4>
-                      <Badge className={salesType.product === 'Refresco'
-                        ? 'bg-blue-100 text-blue-800 border-blue-300'
-                        : 'bg-purple-100 text-purple-800 border-purple-300'
+                      <Badge className={
+                        salesType.product === 'Refresco'
+                          ? 'bg-blue-100 text-blue-800 border-blue-300'
+                          : salesType.product === 'Helado'
+                          ? 'bg-purple-100 text-purple-800 border-purple-300'
+                          : 'bg-orange-100 text-orange-800 border-orange-300'
                       }>
                         {salesType.product}
                       </Badge>
@@ -236,9 +254,12 @@ export default function TemporalAnalysisDashboard({
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <p className={salesType.product === 'Refresco'
-                        ? 'text-xl font-bold text-blue-800'
-                        : 'text-xl font-bold text-purple-800'
+                      <p className={
+                        salesType.product === 'Refresco'
+                          ? 'text-xl font-bold text-blue-800'
+                          : salesType.product === 'Helado'
+                          ? 'text-xl font-bold text-purple-800'
+                          : 'text-xl font-bold text-orange-800'
                       }>
                         {formatCurrency(salesType.totalRevenue)}
                       </p>
@@ -246,9 +267,12 @@ export default function TemporalAnalysisDashboard({
                     </div>
                     
                     <div className="text-center">
-                      <p className={salesType.product === 'Refresco'
-                        ? 'text-xl font-bold text-blue-700'
-                        : 'text-xl font-bold text-purple-700'
+                      <p className={
+                        salesType.product === 'Refresco'
+                          ? 'text-xl font-bold text-blue-700'
+                          : salesType.product === 'Helado'
+                          ? 'text-xl font-bold text-purple-700'
+                          : 'text-xl font-bold text-orange-700'
                       }>
                         {salesType.totalUnits}
                       </p>
@@ -256,9 +280,12 @@ export default function TemporalAnalysisDashboard({
                     </div>
                     
                     <div className="text-center">
-                      <p className={salesType.product === 'Refresco'
-                        ? 'text-lg font-semibold text-blue-700'
-                        : 'text-lg font-semibold text-purple-700'
+                      <p className={
+                        salesType.product === 'Refresco'
+                          ? 'text-lg font-semibold text-blue-700'
+                          : salesType.product === 'Helado'
+                          ? 'text-lg font-semibold text-purple-700'
+                          : 'text-lg font-semibold text-orange-700'
                       }>
                         {formatCurrency(salesType.averagePrice)}
                       </p>
@@ -266,9 +293,12 @@ export default function TemporalAnalysisDashboard({
                     </div>
                     
                     <div className="text-center">
-                      <p className={salesType.product === 'Refresco'
-                        ? 'text-lg font-semibold text-blue-700'
-                        : 'text-lg font-semibold text-purple-700'
+                      <p className={
+                        salesType.product === 'Refresco'
+                          ? 'text-lg font-semibold text-blue-700'
+                          : salesType.product === 'Helado'
+                          ? 'text-lg font-semibold text-purple-700'
+                          : 'text-lg font-semibold text-orange-700'
                       }>
                         {salesType.transactions}
                       </p>
@@ -459,6 +489,44 @@ export default function TemporalAnalysisDashboard({
                       </div>
                     </div>
                   </div>
+
+                  {/* Pacas */}
+                  <div className="bg-orange-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="font-semibold text-orange-800 flex items-center gap-2">
+                        📦 Pacas
+                      </h5>
+                      <Badge className="bg-orange-100 text-orange-800">
+                        {employee.productMix.pacasPercentage.toFixed(1)}%
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-orange-600">Ingresos:</p>
+                        <p className="font-bold text-orange-800">
+                          {formatCurrency(employee.pacas.revenue)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-orange-600">Unidades:</p>
+                        <p className="font-bold text-orange-800">
+                          {employee.pacas.units}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-orange-600">Ventas:</p>
+                        <p className="font-bold text-orange-800">
+                          {employee.pacas.transactions}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-orange-600">Precio Prom:</p>
+                        <p className="font-bold text-orange-800">
+                          {formatCurrency(employee.pacas.averagePrice)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Métricas Adicionales */}
@@ -480,7 +548,7 @@ export default function TemporalAnalysisDashboard({
               <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 📊 Comparativa de Empleados
               </h5>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
                 <div className="text-center">
                   <p className="text-gray-600 mb-1">Mejor Vendedor</p>
                   <p className="font-bold text-green-600">
@@ -513,6 +581,17 @@ export default function TemporalAnalysisDashboard({
                   </p>
                 </div>
                 <div className="text-center">
+                  <p className="text-gray-600 mb-1">Más Pacas</p>
+                  <p className="font-bold text-orange-600">
+                    {employeesData.reduce((best, current) => 
+                      current.pacas.units > best.pacas.units ? current : best
+                    ).employee}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {Math.max(...employeesData.map(e => e.pacas.units))} unidades
+                  </p>
+                </div>
+                <div className="text-center">
                   <p className="text-gray-600 mb-1">Mejor Promedio</p>
                   <p className="font-bold text-indigo-600">
                     {employeesData.reduce((best, current) => 
@@ -531,352 +610,466 @@ export default function TemporalAnalysisDashboard({
     )
   }
 
-  const renderPeriodAnalysis = (data: PeriodAnalysis) => (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">{data.period}</h2>
-        <p className="text-sm text-gray-600">
-          {formatDate(data.startDate)} - {formatDate(data.endDate)}
-        </p>
-      </div>
+  const renderPeriodAnalysis = (data: PeriodAnalysis) => {
+    // Verificar si hay datos de ventas en el período
+    const hasData = data.totalRevenue > 0 || data.unitsSold > 0 || data.salesDays > 0
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Ingresos</p>
-                <p className="text-xl font-bold text-green-600">
-                  {formatCurrency(data.totalRevenue)}
+    if (!hasData) {
+      return (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900">{data.period}</h2>
+            <p className="text-gray-600 mt-2">Análisis del período seleccionado</p>
+          </div>
+
+          <Card className="border-yellow-200 bg-yellow-50">
+            <CardContent className="p-8">
+              <div className="text-center text-yellow-700">
+                <Calendar className="h-16 w-16 mx-auto mb-4 text-yellow-500" />
+                <h3 className="text-xl font-semibold mb-2">No hay ventas registradas</h3>
+                <p className="text-sm mb-4">
+                  No se encontraron ventas en el período <strong>{data.period}</strong>.
                 </p>
+                <div className="bg-white p-4 rounded-lg border border-yellow-300">
+                  <p className="text-sm text-gray-600 mb-2">
+                    <strong>Período analizado:</strong> {new Date(data.startDate).toLocaleDateString('es-ES')} - {new Date(data.endDate).toLocaleDateString('es-ES')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Prueba seleccionar otro mes o registra algunas ventas para ver el análisis completo.
+                  </p>
+                </div>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Ganancia Neta</p>
-                <p className={`text-xl font-bold ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(data.netProfit)}
-                </p>
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">{data.period}</h2>
+          <p className="text-sm text-gray-600">
+            {formatDate(data.startDate)} - {formatDate(data.endDate)}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Ingresos</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {formatCurrency(data.totalRevenue)}
+                  </p>
+                </div>
+                <DollarSign className="h-8 w-8 text-green-600" />
               </div>
-              <Target className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Unidades</p>
-                <p className="text-xl font-bold text-purple-600">
-                  {data.unitsSold.toLocaleString()}
-                </p>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Ganancia Neta</p>
+                  <p className={`text-xl font-bold ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(data.netProfit)}
+                  </p>
+                </div>
+                <Target className="h-8 w-8 text-blue-600" />
               </div>
-              <Package className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Días Ventas</p>
-                <p className="text-xl font-bold text-orange-600">
-                  {data.salesDays}
-                </p>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Unidades</p>
+                  <p className="text-xl font-bold text-purple-600">
+                    {data.unitsSold.toLocaleString()}
+                  </p>
+                </div>
+                <Package className="h-8 w-8 text-purple-600" />
               </div>
-              <Clock className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              Análisis de Rentabilidad
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Ingresos Totales:</span>
-              <span className="font-semibold">{formatCurrency(data.totalRevenue)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Costo de Ventas (COGS):</span>
-              <span className="font-semibold text-red-600">{formatCurrency(data.totalCOGS)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Ganancia Bruta:</span>
-              <span className="font-semibold text-green-600">{formatCurrency(data.grossProfit)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Gastos Operativos:</span>
-              <span className="font-semibold text-orange-600">{formatCurrency(data.operatingExpenses)}</span>
-            </div>
-            <div className="border-t pt-2">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Días Ventas</p>
+                  <p className="text-xl font-bold text-orange-600">
+                    {data.salesDays}
+                  </p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                Análisis de Rentabilidad
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex justify-between">
-                <span className="font-medium">Ganancia Neta:</span>
-                <span className={`font-bold ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(data.netProfit)}
-                </span>
+                <span className="text-gray-600">Ingresos Totales:</span>
+                <span className="font-semibold">{formatCurrency(data.totalRevenue)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Margen Neto:</span>
-                <span className={`font-medium ${data.netProfitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {data.netProfitMargin.toFixed(1)}%
-                </span>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Costo de Ventas (COGS):</span>
+                <span className="font-semibold text-red-600">{formatCurrency(data.totalCOGS)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Ganancia Bruta:</span>
+                <span className="font-semibold text-green-600">{formatCurrency(data.grossProfit)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Gastos Operativos:</span>
+                <span className="font-semibold text-orange-600">{formatCurrency(data.operatingExpenses)}</span>
+              </div>
+              <div className="border-t pt-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Ganancia Neta:</span>
+                  <span className={`font-bold ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(data.netProfit)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Margen Neto:</span>
+                  <span className={`font-medium ${data.netProfitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {data.netProfitMargin.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-purple-600" />
+                Desglose por Productos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">🥤 Refrescos</span>
+                  <Badge variant="outline">{data.refrescos.units} unidades</Badge>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ingresos:</span>
+                    <span className="font-medium">{formatCurrency(data.refrescos.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ganancia:</span>
+                    <span className="font-medium text-green-600">{formatCurrency(data.refrescos.grossProfit)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">🍦 Helados</span>
+                  <Badge variant="outline">{data.helados.units} unidades</Badge>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ingresos:</span>
+                    <span className="font-medium">{formatCurrency(data.helados.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ganancia:</span>
+                    <span className="font-medium text-green-600">{formatCurrency(data.helados.grossProfit)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">📦 Pacas</span>
+                  <Badge variant="outline">{data.pacas.units} unidades</Badge>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ingresos:</span>
+                    <span className="font-medium">{formatCurrency(data.pacas.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ganancia:</span>
+                    <span className="font-medium text-green-600">{formatCurrency(data.pacas.grossProfit)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Desglose Detallado de Ventas por Ingresos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Desglose Detallado de Ventas por Ingresos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Refrescos */}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-blue-800 flex items-center gap-2">
+                    🥤 Refrescos
+                  </h4>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                    {((data.refrescos.revenue / data.totalRevenue) * 100).toFixed(1)}% del total
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-700">Total de Ingresos:</span>
+                    <span className="text-lg font-bold text-blue-800">
+                      {formatCurrency(data.refrescos.revenue)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-blue-600">Unidades Vendidas:</span>
+                    <span className="font-semibold text-blue-700">
+                      {data.refrescos.units} unidades
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-blue-600">Precio Promedio:</span>
+                    <span className="font-semibold text-blue-700">
+                      {formatCurrency(data.refrescos.units > 0 ? data.refrescos.revenue / data.refrescos.units : 0)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-blue-600">Ganancia Bruta:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(data.refrescos.grossProfit)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-blue-600">Margen de Ganancia:</span>
+                    <span className="font-semibold text-green-600">
+                      {data.refrescos.revenue > 0 ? ((data.refrescos.grossProfit / data.refrescos.revenue) * 100).toFixed(1) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Helados */}
+              <div className="bg-purple-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-purple-800 flex items-center gap-2">
+                    🍦 Helados
+                  </h4>
+                  <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                    {((data.helados.revenue / data.totalRevenue) * 100).toFixed(1)}% del total
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-purple-700">Total de Ingresos:</span>
+                    <span className="text-lg font-bold text-purple-800">
+                      {formatCurrency(data.helados.revenue)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-purple-600">Unidades Vendidas:</span>
+                    <span className="font-semibold text-purple-700">
+                      {data.helados.units} unidades
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-purple-600">Precio Promedio:</span>
+                    <span className="font-semibold text-purple-700">
+                      {formatCurrency(data.helados.units > 0 ? data.helados.revenue / data.helados.units : 0)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-purple-600">Ganancia Bruta:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(data.helados.grossProfit)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-purple-600">Margen de Ganancia:</span>
+                    <span className="font-semibold text-green-600">
+                      {data.helados.revenue > 0 ? ((data.helados.grossProfit / data.helados.revenue) * 100).toFixed(1) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pacas */}
+              <div className="bg-orange-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-lg font-semibold text-orange-800 flex items-center gap-2">
+                    📦 Pacas
+                  </h4>
+                  <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                    {data.totalRevenue > 0 ? ((data.pacas.revenue / data.totalRevenue) * 100).toFixed(1) : 0}% del total
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-orange-700">Total de Ingresos:</span>
+                    <span className="text-lg font-bold text-orange-800">
+                      {formatCurrency(data.pacas.revenue)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-orange-600">Unidades Vendidas:</span>
+                    <span className="font-semibold text-orange-700">
+                      {data.pacas.units} pacas
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-orange-600">Precio Promedio:</span>
+                    <span className="font-semibold text-orange-700">
+                      {formatCurrency(data.pacas.units > 0 ? data.pacas.revenue / data.pacas.units : 0)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-orange-600">Ganancia Bruta:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(data.pacas.grossProfit)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-orange-600">Margen de Ganancia:</span>
+                    <span className="font-semibold text-green-600">
+                      {data.pacas.revenue > 0 ? ((data.pacas.grossProfit / data.pacas.revenue) * 100).toFixed(1) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumen Comparativo */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Resumen Comparativo
+              </h5>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-1">Producto más Rentable</p>
+                  <p className="font-bold text-green-600">
+                    {data.refrescos.grossProfit >= data.helados.grossProfit && data.refrescos.grossProfit >= data.pacas.grossProfit 
+                      ? '🥤 Refrescos' 
+                      : data.helados.grossProfit >= data.pacas.grossProfit 
+                      ? '🍦 Helados' 
+                      : '📦 Pacas'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatCurrency(Math.max(data.refrescos.grossProfit, data.helados.grossProfit, data.pacas.grossProfit))}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-600 mb-1">Mayor Volumen de Ventas</p>
+                  <p className="font-bold text-blue-600">
+                    {data.refrescos.units >= data.helados.units && data.refrescos.units >= data.pacas.units 
+                      ? '🥤 Refrescos' 
+                      : data.helados.units >= data.pacas.units 
+                      ? '🍦 Helados' 
+                      : '📦 Pacas'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {Math.max(data.refrescos.units, data.helados.units, data.pacas.units)} unidades
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-600 mb-1">Mayor Ingresos</p>
+                  <p className="font-bold text-purple-600">
+                    {data.refrescos.revenue >= data.helados.revenue && data.refrescos.revenue >= data.pacas.revenue 
+                      ? '🥤 Refrescos' 
+                      : data.helados.revenue >= data.pacas.revenue 
+                      ? '🍦 Helados' 
+                      : '📦 Pacas'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatCurrency(Math.max(data.refrescos.revenue, data.helados.revenue, data.pacas.revenue))}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Resumen de Tipos de Ventas */}
+        {renderSalesTypeBreakdown(data.startDate, data.endDate)}
+
+        {/* Rendimiento por Empleado */}
+        {renderEmployeeSalesAnalysis(data.startDate, data.endDate)}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-purple-600" />
-              Desglose por Productos
+              <Target className="h-5 w-5 text-indigo-600" />
+              Métricas de Rendimiento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">🥤 Refrescos</span>
-                <Badge variant="outline">{data.refrescos.units} unidades</Badge>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(data.averageRevenuePerDay)}
+                </p>
+                <p className="text-sm text-gray-600">Promedio por Día</p>
               </div>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ingresos:</span>
-                  <span className="font-medium">{formatCurrency(data.refrescos.revenue)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ganancia:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(data.refrescos.grossProfit)}</span>
-                </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">
+                  {data.averageUnitsPerDay.toFixed(1)}
+                </p>
+                <p className="text-sm text-gray-600">Unidades por Día</p>
               </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">🍦 Helados</span>
-                <Badge variant="outline">{data.helados.units} unidades</Badge>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {data.grossProfitMargin.toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">Margen Bruto</p>
               </div>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ingresos:</span>
-                  <span className="font-medium">{formatCurrency(data.helados.revenue)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ganancia:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(data.helados.grossProfit)}</span>
-                </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-indigo-600">
+                  {data.netProfitMargin.toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">Margen Neto</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Desglose Detallado de Ventas por Ingresos */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
-            Desglose Detallado de Ventas por Ingresos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Refrescos */}
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-blue-800 flex items-center gap-2">
-                  🥤 Refrescos
-                </h4>
-                <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                  {((data.refrescos.revenue / data.totalRevenue) * 100).toFixed(1)}% del total
-                </Badge>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-blue-700">Total de Ingresos:</span>
-                  <span className="text-lg font-bold text-blue-800">
-                    {formatCurrency(data.refrescos.revenue)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Unidades Vendidas:</span>
-                  <span className="font-semibold text-blue-700">
-                    {data.refrescos.units} unidades
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Precio Promedio:</span>
-                  <span className="font-semibold text-blue-700">
-                    {formatCurrency(data.refrescos.units > 0 ? data.refrescos.revenue / data.refrescos.units : 0)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Ganancia Bruta:</span>
-                  <span className="font-semibold text-green-600">
-                    {formatCurrency(data.refrescos.grossProfit)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Margen de Ganancia:</span>
-                  <span className="font-semibold text-green-600">
-                    {data.refrescos.revenue > 0 ? ((data.refrescos.grossProfit / data.refrescos.revenue) * 100).toFixed(1) : 0}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Helados */}
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-purple-800 flex items-center gap-2">
-                  🍦 Helados
-                </h4>
-                <Badge className="bg-purple-100 text-purple-800 border-purple-200">
-                  {((data.helados.revenue / data.totalRevenue) * 100).toFixed(1)}% del total
-                </Badge>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-purple-700">Total de Ingresos:</span>
-                  <span className="text-lg font-bold text-purple-800">
-                    {formatCurrency(data.helados.revenue)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-purple-600">Unidades Vendidas:</span>
-                  <span className="font-semibold text-purple-700">
-                    {data.helados.units} unidades
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-purple-600">Precio Promedio:</span>
-                  <span className="font-semibold text-purple-700">
-                    {formatCurrency(data.helados.units > 0 ? data.helados.revenue / data.helados.units : 0)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-purple-600">Ganancia Bruta:</span>
-                  <span className="font-semibold text-green-600">
-                    {formatCurrency(data.helados.grossProfit)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-purple-600">Margen de Ganancia:</span>
-                  <span className="font-semibold text-green-600">
-                    {data.helados.revenue > 0 ? ((data.helados.grossProfit / data.helados.revenue) * 100).toFixed(1) : 0}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Resumen Comparativo */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Resumen Comparativo
-            </h5>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="text-center">
-                <p className="text-gray-600 mb-1">Producto más Rentable</p>
-                <p className="font-bold text-green-600">
-                  {data.refrescos.grossProfit > data.helados.grossProfit ? '🥤 Refrescos' : '🍦 Helados'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatCurrency(Math.max(data.refrescos.grossProfit, data.helados.grossProfit))}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-gray-600 mb-1">Mayor Volumen de Ventas</p>
-                <p className="font-bold text-blue-600">
-                  {data.refrescos.units > data.helados.units ? '🥤 Refrescos' : '🍦 Helados'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {Math.max(data.refrescos.units, data.helados.units)} unidades
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-gray-600 mb-1">Mayor Ingresos</p>
-                <p className="font-bold text-purple-600">
-                  {data.refrescos.revenue > data.helados.revenue ? '🥤 Refrescos' : '🍦 Helados'}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatCurrency(Math.max(data.refrescos.revenue, data.helados.revenue))}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Resumen de Tipos de Ventas */}
-      {renderSalesTypeBreakdown(data.startDate, data.endDate)}
-
-      {/* Rendimiento por Empleado */}
-      {renderEmployeeSalesAnalysis(data.startDate, data.endDate)}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-indigo-600" />
-            Métricas de Rendimiento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">
-                {formatCurrency(data.averageRevenuePerDay)}
-              </p>
-              <p className="text-sm text-gray-600">Promedio por Día</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">
-                {data.averageUnitsPerDay.toFixed(1)}
-              </p>
-              <p className="text-sm text-gray-600">Unidades por Día</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">
-                {data.grossProfitMargin.toFixed(1)}%
-              </p>
-              <p className="text-sm text-gray-600">Margen Bruto</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-indigo-600">
-                {data.netProfitMargin.toFixed(1)}%
-              </p>
-              <p className="text-sm text-gray-600">Margen Neto</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    )
+  }
 
   const renderAnnualAnalysis = (data: AnnualAnalysis) => (
     <div className="space-y-6">
@@ -969,7 +1162,7 @@ export default function TemporalAnalysisDashboard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Refrescos */}
             <div className="bg-blue-50 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1085,6 +1278,64 @@ export default function TemporalAnalysisDashboard({
                 </div>
               </div>
             </div>
+
+            {/* Pacas */}
+            <div className="bg-orange-50 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xl font-bold text-orange-800 flex items-center gap-2">
+                  📦 Pacas
+                </h4>
+                <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-sm">
+                  {data.productBreakdown.pacas.percentage.toFixed(1)}% del total
+                </Badge>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-orange-700">Total de Ingresos Anuales:</span>
+                  <span className="text-xl font-bold text-orange-800">
+                    {formatCurrency(data.productBreakdown.pacas.totalRevenue)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-orange-600">Unidades Vendidas:</span>
+                  <span className="font-semibold text-orange-700">
+                    {data.productBreakdown.pacas.totalUnits.toLocaleString()} pacas
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-orange-600">Precio Promedio:</span>
+                  <span className="font-semibold text-orange-700">
+                    {formatCurrency(data.productBreakdown.pacas.totalUnits > 0 ? 
+                      data.productBreakdown.pacas.totalRevenue / data.productBreakdown.pacas.totalUnits : 0)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-orange-600">Ganancia Bruta Anual:</span>
+                  <span className="font-semibold text-green-600">
+                    {formatCurrency(data.productBreakdown.pacas.grossProfit)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-orange-600">Margen de Ganancia:</span>
+                  <span className="font-semibold text-green-600">
+                    {data.productBreakdown.pacas.totalRevenue > 0 ? 
+                      ((data.productBreakdown.pacas.grossProfit / data.productBreakdown.pacas.totalRevenue) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-orange-600">Promedio Mensual:</span>
+                  <span className="font-medium text-orange-700">
+                    {formatCurrency(data.productBreakdown.pacas.totalRevenue / 12)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Resumen Comparativo Anual */}
@@ -1097,40 +1348,62 @@ export default function TemporalAnalysisDashboard({
               <div className="text-center">
                 <p className="text-gray-600 mb-1">Producto más Rentable</p>
                 <p className="font-bold text-green-600">
-                  {data.productBreakdown.refrescos.grossProfit > data.productBreakdown.helados.grossProfit ? '🥤 Refrescos' : '🍦 Helados'}
+                  {data.productBreakdown.refrescos.grossProfit >= data.productBreakdown.helados.grossProfit && data.productBreakdown.refrescos.grossProfit >= data.productBreakdown.pacas.grossProfit 
+                    ? '🥤 Refrescos' 
+                    : data.productBreakdown.helados.grossProfit >= data.productBreakdown.pacas.grossProfit 
+                    ? '🍦 Helados' 
+                    : '📦 Pacas'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {formatCurrency(Math.max(data.productBreakdown.refrescos.grossProfit, data.productBreakdown.helados.grossProfit))}
+                  {formatCurrency(Math.max(data.productBreakdown.refrescos.grossProfit, data.productBreakdown.helados.grossProfit, data.productBreakdown.pacas.grossProfit))}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-gray-600 mb-1">Mayor Volumen Anual</p>
                 <p className="font-bold text-blue-600">
-                  {data.productBreakdown.refrescos.totalUnits > data.productBreakdown.helados.totalUnits ? '🥤 Refrescos' : '🍦 Helados'}
+                  {data.productBreakdown.refrescos.totalUnits >= data.productBreakdown.helados.totalUnits && data.productBreakdown.refrescos.totalUnits >= data.productBreakdown.pacas.totalUnits 
+                    ? '🥤 Refrescos' 
+                    : data.productBreakdown.helados.totalUnits >= data.productBreakdown.pacas.totalUnits 
+                    ? '🍦 Helados' 
+                    : '📦 Pacas'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {Math.max(data.productBreakdown.refrescos.totalUnits, data.productBreakdown.helados.totalUnits).toLocaleString()} unidades
+                  {Math.max(data.productBreakdown.refrescos.totalUnits, data.productBreakdown.helados.totalUnits, data.productBreakdown.pacas.totalUnits).toLocaleString()} unidades
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-gray-600 mb-1">Mayores Ingresos</p>
                 <p className="font-bold text-purple-600">
-                  {data.productBreakdown.refrescos.totalRevenue > data.productBreakdown.helados.totalRevenue ? '🥤 Refrescos' : '🍦 Helados'}
+                  {data.productBreakdown.refrescos.totalRevenue >= data.productBreakdown.helados.totalRevenue && data.productBreakdown.refrescos.totalRevenue >= data.productBreakdown.pacas.totalRevenue 
+                    ? '🥤 Refrescos' 
+                    : data.productBreakdown.helados.totalRevenue >= data.productBreakdown.pacas.totalRevenue 
+                    ? '🍦 Helados' 
+                    : '📦 Pacas'}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {formatCurrency(Math.max(data.productBreakdown.refrescos.totalRevenue, data.productBreakdown.helados.totalRevenue))}
+                  {formatCurrency(Math.max(data.productBreakdown.refrescos.totalRevenue, data.productBreakdown.helados.totalRevenue, data.productBreakdown.pacas.totalRevenue))}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-gray-600 mb-1">Mejor Margen</p>
                 <p className="font-bold text-indigo-600">
-                  {(data.productBreakdown.refrescos.grossProfit / data.productBreakdown.refrescos.totalRevenue) > 
-                   (data.productBreakdown.helados.grossProfit / data.productBreakdown.helados.totalRevenue) ? '🥤 Refrescos' : '🍦 Helados'}
+                  {(() => {
+                    const refrescoMargin = data.productBreakdown.refrescos.totalRevenue > 0 ? (data.productBreakdown.refrescos.grossProfit / data.productBreakdown.refrescos.totalRevenue) : 0
+                    const heladoMargin = data.productBreakdown.helados.totalRevenue > 0 ? (data.productBreakdown.helados.grossProfit / data.productBreakdown.helados.totalRevenue) : 0
+                    const pacaMargin = data.productBreakdown.pacas.totalRevenue > 0 ? (data.productBreakdown.pacas.grossProfit / data.productBreakdown.pacas.totalRevenue) : 0
+                    
+                    return refrescoMargin >= heladoMargin && refrescoMargin >= pacaMargin 
+                      ? '🥤 Refrescos' 
+                      : heladoMargin >= pacaMargin 
+                      ? '🍦 Helados' 
+                      : '📦 Pacas'
+                  })()}
                 </p>
                 <p className="text-xs text-gray-500">
                   {Math.max(
-                    (data.productBreakdown.refrescos.grossProfit / data.productBreakdown.refrescos.totalRevenue) * 100,
-                    (data.productBreakdown.helados.grossProfit / data.productBreakdown.helados.totalRevenue) * 100
+                    data.productBreakdown.refrescos.totalRevenue > 0 ? (data.productBreakdown.refrescos.grossProfit / data.productBreakdown.refrescos.totalRevenue) * 100 : 0,
+                    data.productBreakdown.helados.totalRevenue > 0 ? (data.productBreakdown.helados.grossProfit / data.productBreakdown.helados.totalRevenue) * 100 : 0,
+                    data.productBreakdown.pacas.totalRevenue > 0 ? (data.productBreakdown.pacas.grossProfit / data.productBreakdown.pacas.totalRevenue) * 100 : 0
                   ).toFixed(1)}%
                 </p>
               </div>
@@ -1267,7 +1540,6 @@ export default function TemporalAnalysisDashboard({
                       <SelectItem 
                         key={month.month} 
                         value={month.month.toString()}
-                        disabled={!month.hasSales}
                       >
                         {month.name} {!month.hasSales && '(Sin ventas)'}
                       </SelectItem>
@@ -1316,7 +1588,22 @@ export default function TemporalAnalysisDashboard({
         </div>
       )}
 
-      {!analysis && (
+      {!analysis && analysisType === 'monthly' && selectedYear && selectedMonth && (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center text-gray-500">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-lg font-medium mb-2">No hay datos para este período</p>
+              <p className="text-sm">
+                No se encontraron ventas en {availableMonths.find(m => m.month === selectedMonth)?.name} {selectedYear}.
+                Prueba seleccionando otro mes o cambia al análisis anual para ver todos los datos del año.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!analysis && (analysisType !== 'monthly' || !selectedYear || !selectedMonth) && (
         <Card>
           <CardContent className="p-8">
             <div className="text-center text-gray-500">

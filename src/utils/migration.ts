@@ -8,7 +8,7 @@ interface LegacyIncomeItem {
   type: string
   employee?: string
   createdAt: string
-  product?: 'Refresco' | 'Helado'
+  product?: 'Refresco' | 'Helado' | 'Paca'
 }
 
 interface LegacyProductionItem {
@@ -21,7 +21,7 @@ interface LegacyProductionItem {
   totalCost: number
   costPerUnit: number
   createdAt: string
-  product?: 'Refresco' | 'Helado'
+  product?: 'Refresco' | 'Helado' | 'Paca'
 }
 
 export function migrateLocalStorageData(): { migrated: boolean; message: string } {

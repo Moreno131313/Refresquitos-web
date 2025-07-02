@@ -12,7 +12,7 @@ export interface Income extends BaseEntity {
   quantity: number
   date: string
   type: 'Venta Empleado' | 'Pedido Puerto López' | 'Pedido Puerto Gaitán' | 'Paca Villavicencio'
-  product: 'Refresco' | 'Helado'
+  product: 'Refresco' | 'Helado' | 'Paca'
   employee?: 'César' | 'Yesid'
   description?: string
   userId?: string // Para Firebase
@@ -35,7 +35,7 @@ export interface MaterialCost {
 
 export interface Production extends BaseEntity {
   date: string
-  product: 'Refresco' | 'Helado'
+  product: 'Refresco' | 'Helado' | 'Paca'
   quantity: number
   materialCosts: MaterialCost[]
   directLaborCost: number
@@ -151,7 +151,13 @@ export const MATERIAL_NAMES = [
   'Bolsas para helados',
   'Palillos',
   'Uvas pasas',
-  'Esencia de ron con pasas'
+  'Esencia de ron con pasas',
+  
+  // Materiales para Pacas
+  'Cajas para pacas',
+  'Etiquetas pacas',
+  'Cinta adhesiva',
+  'Papel protector'
 ] as const
 
 export type MaterialName = typeof MATERIAL_NAMES[number]
@@ -203,6 +209,29 @@ export const PRODUCT_CONFIG = {
       'Uvas pasas',
       'Esencia de vainilla blanca *Galon',
       'Esencia de ron con pasas'
+    ]
+  },
+  Paca: {
+    price: 9000, // Precio por paca (aproximadamente 20 refrescos pequeños)
+    materials: [
+      'Leche x cantina (40litros)',
+      'Leche x cantina (20 litros)',
+      'Azucar x BULTO',
+      'Azucar x kilo',
+      'Maracuya',
+      'Mora',
+      'Esencia vainilla blanca *Galon',
+      'Esencia de Chicle*500ml',
+      'Esencia de Arequipe*500ml',
+      'Esencia de Vainilla blanca levapan *500ml',
+      'Esencia de Leche condensada *500ml',
+      'Galletas oreo *12und',
+      'CMC *500Gr',
+      'Bolsas para fabricar refrescos pequeños',
+      'Cajas para pacas',
+      'Etiquetas pacas',
+      'Cinta adhesiva',
+      'Papel protector'
     ]
   }
 } as const

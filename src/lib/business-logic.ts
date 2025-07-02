@@ -26,7 +26,7 @@ export interface InventoryBatch {
   remainingQuantity: number
   costPerUnit: number
   totalCost: number
-  product: 'Refresco' | 'Helado' // Agregado para separar por producto
+  product: 'Refresco' | 'Helado' | 'Paca' // Agregado para separar por producto
 }
 
 // Interfaz para inventario separado por producto
@@ -40,6 +40,14 @@ export interface SeparateInventoryStatus {
     averageCostInInventory: number
   }
   helados: {
+    totalProduced: number
+    totalSold: number
+    currentInventory: number
+    inventoryBatches: InventoryBatch[]
+    totalInventoryValue: number
+    averageCostInInventory: number
+  }
+  pacas: {
     totalProduced: number
     totalSold: number
     currentInventory: number
@@ -120,6 +128,16 @@ export interface SeparateFinancialAnalysis {
     averageCostPerUnit: number
     averageProfitPerUnit: number
   }
+  pacas: {
+    totalRevenue: number
+    totalCOGS: number
+    grossProfit: number
+    grossProfitMargin: number
+    unitsSold: number
+    averageRevenuePerUnit: number
+    averageCostPerUnit: number
+    averageProfitPerUnit: number
+  }
   combined: {
     totalRevenue: number
     totalCOGS: number
@@ -136,7 +154,7 @@ export interface SeparateFinancialAnalysis {
 }
 
 // Función para obtener el precio de un producto
-export function getProductPrice(product: 'Refresco' | 'Helado'): number {
+export function getProductPrice(product: 'Refresco' | 'Helado' | 'Paca'): number {
   if (!product) {
     console.warn('getProductPrice: product is undefined, defaulting to Refresco')
     return BUSINESS_CONFIG.PRODUCTS.Refresco.price
@@ -163,7 +181,7 @@ export function createInventoryBatches(productions: Production[]): InventoryBatc
       remainingQuantity: prod.quantity,
       costPerUnit: prod.costPerUnit,
       totalCost: prod.totalCost,
-      product: prod.product as 'Refresco' | 'Helado'
+      product: prod.product as 'Refresco' | 'Helado' | 'Paca'
     }))
     .sort((a, b) => new Date(a.productionDate).getTime() - new Date(b.productionDate).getTime())
 }
@@ -204,7 +222,7 @@ export function calculateSaleCost(
   
   // Asegurar que el producto tenga un valor válido
   const productType = sale.product || 'Refresco'
-  const totalRevenue = sale.quantity * getProductPrice(productType as 'Refresco' | 'Helado')
+  const totalRevenue = sale.quantity * getProductPrice(productType as 'Refresco' | 'Helado' | 'Paca')
   const grossProfit = totalRevenue - totalCost
   const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
   
@@ -268,7 +286,7 @@ export function calculateSaleCostByProduct(
     totalCost += quantityToSell * avgCost
   }
   
-  const productType = saleProduct as 'Refresco' | 'Helado'
+  const productType = saleProduct as 'Refresco' | 'Helado' | 'Paca'
   const totalRevenue = sale.quantity * getProductPrice(productType)
   const grossProfit = totalRevenue - totalCost
   const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
@@ -483,27 +501,26 @@ export function getSeparateInventoryStatus(
   productions: Production[],
   incomes: Income[]
 ): SeparateInventoryStatus {
-  // Separar producciones por producto
+  // Separar por producto
   const refrescoProductions = productions.filter(p => p.product === 'Refresco')
   const heladoProductions = productions.filter(p => p.product === 'Helado')
+  const pacaProductions = productions.filter(p => p.product === 'Paca')
   
-  // Separar ventas por producto
   const refrescoSales = incomes.filter(i => i.product === 'Refresco')
   const heladoSales = incomes.filter(i => i.product === 'Helado')
+  const pacaSales = incomes.filter(i => i.product === 'Paca')
   
-  // Calcular inventario de refrescos
+  // Calcular inventario para cada producto
   const refrescoInventory = getCurrentInventoryStatus(refrescoProductions, refrescoSales)
-  
-  // Calcular inventario de helados
   const heladoInventory = getCurrentInventoryStatus(heladoProductions, heladoSales)
+  const pacaInventory = getCurrentInventoryStatus(pacaProductions, pacaSales)
   
   // Calcular totales combinados
-  const combinedTotalProduced = refrescoInventory.totalProduced + heladoInventory.totalProduced
-  const combinedTotalSold = refrescoInventory.totalSold + heladoInventory.totalSold
-  const combinedCurrentInventory = refrescoInventory.currentInventory + heladoInventory.currentInventory
-  const combinedTotalInventoryValue = refrescoInventory.totalInventoryValue + heladoInventory.totalInventoryValue
-  const combinedAverageCostInInventory = combinedCurrentInventory > 0 ? 
-    combinedTotalInventoryValue / combinedCurrentInventory : 0
+  const combinedTotalProduced = refrescoInventory.totalProduced + heladoInventory.totalProduced + pacaInventory.totalProduced
+  const combinedTotalSold = refrescoInventory.totalSold + heladoInventory.totalSold + pacaInventory.totalSold
+  const combinedCurrentInventory = refrescoInventory.currentInventory + heladoInventory.currentInventory + pacaInventory.currentInventory
+  const combinedTotalInventoryValue = refrescoInventory.totalInventoryValue + heladoInventory.totalInventoryValue + pacaInventory.totalInventoryValue
+  const combinedAverageCostInInventory = combinedCurrentInventory > 0 ? combinedTotalInventoryValue / combinedCurrentInventory : 0
   
   return {
     refrescos: {
@@ -522,6 +539,14 @@ export function getSeparateInventoryStatus(
       totalInventoryValue: heladoInventory.totalInventoryValue,
       averageCostInInventory: heladoInventory.averageCostInInventory
     },
+    pacas: {
+      totalProduced: pacaInventory.totalProduced,
+      totalSold: pacaInventory.totalSold,
+      currentInventory: pacaInventory.currentInventory,
+      inventoryBatches: pacaInventory.inventoryBatches,
+      totalInventoryValue: pacaInventory.totalInventoryValue,
+      averageCostInInventory: pacaInventory.averageCostInInventory
+    },
     combined: {
       totalProduced: combinedTotalProduced,
       totalSold: combinedTotalSold,
@@ -537,7 +562,7 @@ export function getSeparateInventoryStatus(
  */
 export function calculatePotentialSaleByProduct(
   quantity: number,
-  product: 'Refresco' | 'Helado',
+  product: 'Refresco' | 'Helado' | 'Paca',
   productions: Production[],
   incomes: Income[]
 ): {
@@ -778,10 +803,12 @@ export function calculateSeparateFinancialAnalysis(
   // Separar producciones por producto
   const refrescoProductions = productions.filter(p => p.product === 'Refresco')
   const heladoProductions = productions.filter(p => p.product === 'Helado')
+  const pacaProductions = productions.filter(p => p.product === 'Paca')
   
   // Separar ventas por producto
   const refrescoSales = incomes.filter(i => i.product === 'Refresco')
   const heladoSales = incomes.filter(i => i.product === 'Helado')
+  const pacaSales = incomes.filter(i => i.product === 'Paca')
   
   // Procesar ventas de refrescos
   const refrescoAnalysis = processAllSalesByProduct(refrescoProductions, refrescoSales)
@@ -792,6 +819,11 @@ export function calculateSeparateFinancialAnalysis(
   const heladoAnalysis = processAllSalesByProduct(heladoProductions, heladoSales)
   const heladoRevenue = heladoSales.reduce((sum, sale) => sum + sale.amount, 0)
   const heladoUnitsSold = heladoSales.reduce((sum, sale) => sum + sale.quantity, 0)
+  
+  // Procesar ventas de pacas
+  const pacaAnalysis = processAllSalesByProduct(pacaProductions, pacaSales)
+  const pacaRevenue = pacaSales.reduce((sum, sale) => sum + sale.amount, 0)
+  const pacaUnitsSold = pacaSales.reduce((sum, sale) => sum + sale.quantity, 0)
   
   // Calcular métricas de refrescos
   const refrescoGrossProfit = refrescoAnalysis.totalGrossProfit
@@ -807,14 +839,21 @@ export function calculateSeparateFinancialAnalysis(
   const heladoAvgCostPerUnit = heladoUnitsSold > 0 ? heladoAnalysis.totalCOGS / heladoUnitsSold : 0
   const heladoAvgProfitPerUnit = heladoUnitsSold > 0 ? heladoGrossProfit / heladoUnitsSold : 0
   
-  // Calcular totales combinados
-  const combinedRevenue = refrescoRevenue + heladoRevenue
-  const combinedCOGS = refrescoAnalysis.totalCOGS + heladoAnalysis.totalCOGS
-  const combinedGrossProfit = refrescoGrossProfit + heladoGrossProfit
-  const combinedGrossProfitMargin = combinedRevenue > 0 ? (combinedGrossProfit / combinedRevenue) * 100 : 0
-  const combinedUnitsSold = refrescoUnitsSold + heladoUnitsSold
+  // Calcular métricas de pacas
+  const pacaGrossProfit = pacaAnalysis.totalGrossProfit
+  const pacaGrossProfitMargin = pacaRevenue > 0 ? (pacaGrossProfit / pacaRevenue) * 100 : 0
+  const pacaAvgRevenuePerUnit = pacaUnitsSold > 0 ? pacaRevenue / pacaUnitsSold : 0
+  const pacaAvgCostPerUnit = pacaUnitsSold > 0 ? pacaAnalysis.totalCOGS / pacaUnitsSold : 0
+  const pacaAvgProfitPerUnit = pacaUnitsSold > 0 ? pacaGrossProfit / pacaUnitsSold : 0
   
-  // Calcular gastos operativos (excluyendo costos de producción que ya están en COGS)
+  // Calcular totales combinados
+  const combinedRevenue = refrescoRevenue + heladoRevenue + pacaRevenue
+  const combinedCOGS = refrescoAnalysis.totalCOGS + heladoAnalysis.totalCOGS + pacaAnalysis.totalCOGS
+  const combinedGrossProfit = refrescoGrossProfit + heladoGrossProfit + pacaGrossProfit
+  const combinedGrossProfitMargin = combinedRevenue > 0 ? (combinedGrossProfit / combinedRevenue) * 100 : 0
+  const combinedUnitsSold = refrescoUnitsSold + heladoUnitsSold + pacaUnitsSold
+  
+  // Calcular gastos operativos (excluir costos directos de fabricación)
   const operatingExpenses = expenses
     .filter(expense => 
       expense.category !== 'Materia Prima Directa' && 
@@ -822,13 +861,14 @@ export function calculateSeparateFinancialAnalysis(
       expense.category !== 'Costos Indirectos de Fabricación'
     )
     .reduce((sum, expense) => sum + expense.amount, 0)
-
-  // Calcular ganancia neta y distribución
+  
   const netProfit = combinedGrossProfit - operatingExpenses
   const netProfitMargin = combinedRevenue > 0 ? (netProfit / combinedRevenue) * 100 : 0
-  const tithe = Math.max(0, netProfit * 0.1)
-  const savings = Math.max(0, netProfit * 0.2)
-  const available = netProfit - tithe - savings
+  
+  // Calcular distribución (diezmo, ahorro, disponible)
+  const tithe = netProfit * 0.1 // 10% diezmo
+  const savings = netProfit * 0.2 // 20% ahorro
+  const available = netProfit - tithe - savings // Resto disponible
   
   return {
     refrescos: {
@@ -850,6 +890,16 @@ export function calculateSeparateFinancialAnalysis(
       averageRevenuePerUnit: heladoAvgRevenuePerUnit,
       averageCostPerUnit: heladoAvgCostPerUnit,
       averageProfitPerUnit: heladoAvgProfitPerUnit
+    },
+    pacas: {
+      totalRevenue: pacaRevenue,
+      totalCOGS: pacaAnalysis.totalCOGS,
+      grossProfit: pacaGrossProfit,
+      grossProfitMargin: pacaGrossProfitMargin,
+      unitsSold: pacaUnitsSold,
+      averageRevenuePerUnit: pacaAvgRevenuePerUnit,
+      averageCostPerUnit: pacaAvgCostPerUnit,
+      averageProfitPerUnit: pacaAvgProfitPerUnit
     },
     combined: {
       totalRevenue: combinedRevenue,
@@ -899,6 +949,12 @@ export interface PeriodAnalysis {
     cogs: number
     grossProfit: number
   }
+  pacas: {
+    revenue: number
+    units: number
+    cogs: number
+    grossProfit: number
+  }
 }
 
 /**
@@ -932,6 +988,13 @@ export interface AnnualAnalysis {
       percentage: number
     }
     helados: {
+      totalRevenue: number
+      totalUnits: number
+      totalCOGS: number
+      grossProfit: number
+      percentage: number
+    }
+    pacas: {
       totalRevenue: number
       totalUnits: number
       totalCOGS: number
@@ -976,6 +1039,7 @@ export function generatePeriodAnalysis(
   // Separar ventas por producto
   const refrescoSales = periodIncomes.filter(i => i.product === 'Refresco')
   const heladoSales = periodIncomes.filter(i => i.product === 'Helado')
+  const pacaSales = periodIncomes.filter(i => i.product === 'Paca')
   
   // Calcular métricas de refrescos
   const refrescoRevenue = refrescoSales.reduce((sum, sale) => sum + sale.amount, 0)
@@ -985,16 +1049,22 @@ export function generatePeriodAnalysis(
   const heladoRevenue = heladoSales.reduce((sum, sale) => sum + sale.amount, 0)
   const heladoUnits = heladoSales.reduce((sum, sale) => sum + sale.quantity, 0)
   
+  // Calcular métricas de pacas
+  const pacaRevenue = pacaSales.reduce((sum, sale) => sum + sale.amount, 0)
+  const pacaUnits = pacaSales.reduce((sum, sale) => sum + sale.quantity, 0)
+  
   // Calcular COGS usando FIFO para el período
   const refrescoProductions = productions.filter(p => p.product === 'Refresco')
   const heladoProductions = productions.filter(p => p.product === 'Helado')
+  const pacaProductions = productions.filter(p => p.product === 'Paca')
   
   const refrescoAnalysis = processAllSalesByProduct(refrescoProductions, refrescoSales)
   const heladoAnalysis = processAllSalesByProduct(heladoProductions, heladoSales)
+  const pacaAnalysis = processAllSalesByProduct(pacaProductions, pacaSales)
   
   // Totales
-  const totalRevenue = refrescoRevenue + heladoRevenue
-  const totalCOGS = refrescoAnalysis.totalCOGS + heladoAnalysis.totalCOGS
+  const totalRevenue = refrescoRevenue + heladoRevenue + pacaRevenue
+  const totalCOGS = refrescoAnalysis.totalCOGS + heladoAnalysis.totalCOGS + pacaAnalysis.totalCOGS
   const grossProfit = totalRevenue - totalCOGS
   const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
   
@@ -1010,7 +1080,7 @@ export function generatePeriodAnalysis(
   const netProfit = grossProfit - operatingExpenses
   const netProfitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
   
-  const unitsSold = refrescoUnits + heladoUnits
+  const unitsSold = refrescoUnits + heladoUnits + pacaUnits
   const uniqueSalesDays = new Set(periodIncomes.map(sale => sale.date)).size
   const averageRevenuePerDay = uniqueSalesDays > 0 ? totalRevenue / uniqueSalesDays : 0
   const averageUnitsPerDay = uniqueSalesDays > 0 ? unitsSold / uniqueSalesDays : 0
@@ -1048,6 +1118,12 @@ export function generatePeriodAnalysis(
       units: heladoUnits,
       cogs: heladoAnalysis.totalCOGS,
       grossProfit: heladoRevenue - heladoAnalysis.totalCOGS
+    },
+    pacas: {
+      revenue: pacaRevenue,
+      units: pacaUnits,
+      cogs: pacaAnalysis.totalCOGS,
+      grossProfit: pacaRevenue - pacaAnalysis.totalCOGS
     }
   }
 }
@@ -1165,6 +1241,13 @@ export function generateAnnualAnalysis(
       totalCOGS: monthlyBreakdown.reduce((sum, month) => sum + month.helados.cogs, 0),
       grossProfit: monthlyBreakdown.reduce((sum, month) => sum + month.helados.grossProfit, 0),
       percentage: 0
+    },
+    pacas: {
+      totalRevenue: monthlyBreakdown.reduce((sum, month) => sum + month.pacas.revenue, 0),
+      totalUnits: monthlyBreakdown.reduce((sum, month) => sum + month.pacas.units, 0),
+      totalCOGS: monthlyBreakdown.reduce((sum, month) => sum + month.pacas.cogs, 0),
+      grossProfit: monthlyBreakdown.reduce((sum, month) => sum + month.pacas.grossProfit, 0),
+      percentage: 0
     }
   }
   
@@ -1172,6 +1255,7 @@ export function generateAnnualAnalysis(
   if (yearlyTotals.totalRevenue > 0) {
     productBreakdown.refrescos.percentage = (productBreakdown.refrescos.totalRevenue / yearlyTotals.totalRevenue) * 100
     productBreakdown.helados.percentage = (productBreakdown.helados.totalRevenue / yearlyTotals.totalRevenue) * 100
+    productBreakdown.pacas.percentage = (productBreakdown.pacas.totalRevenue / yearlyTotals.totalRevenue) * 100
   }
   
   return {
@@ -1232,7 +1316,7 @@ export interface SalesTypeBreakdown {
   totalUnits: number
   averagePrice: number
   percentage: number
-  product: 'Refresco' | 'Helado'
+  product: 'Refresco' | 'Helado' | 'Paca'
   transactions: number
 }
 
@@ -1301,10 +1385,17 @@ export interface EmployeeSalesAnalysis {
     transactions: number
     averagePrice: number
   }
+  pacas: {
+    revenue: number
+    units: number
+    transactions: number
+    averagePrice: number
+  }
   averageRevenuePerTransaction: number
   productMix: {
     refrescosPercentage: number
     heladosPercentage: number
+    pacasPercentage: number
   }
 }
 
@@ -1352,6 +1443,7 @@ export function getEmployeeSalesAnalysis(
     // Desglose por producto
     const refrescoSales = sales.filter(sale => sale.product === 'Refresco')
     const heladoSales = sales.filter(sale => sale.product === 'Helado')
+    const pacaSales = sales.filter(sale => sale.product === 'Paca')
 
     const refrescos = {
       revenue: refrescoSales.reduce((sum, sale) => sum + sale.amount, 0),
@@ -1369,12 +1461,21 @@ export function getEmployeeSalesAnalysis(
     }
     helados.averagePrice = helados.units > 0 ? helados.revenue / helados.units : 0
 
+    const pacas = {
+      revenue: pacaSales.reduce((sum, sale) => sum + sale.amount, 0),
+      units: pacaSales.reduce((sum, sale) => sum + sale.quantity, 0),
+      transactions: pacaSales.length,
+      averagePrice: 0
+    }
+    pacas.averagePrice = pacas.units > 0 ? pacas.revenue / pacas.units : 0
+
     // Métricas adicionales
     const averageRevenuePerTransaction = transactions > 0 ? totalRevenue / transactions : 0
     
     const productMix = {
       refrescosPercentage: totalRevenue > 0 ? (refrescos.revenue / totalRevenue) * 100 : 0,
-      heladosPercentage: totalRevenue > 0 ? (helados.revenue / totalRevenue) * 100 : 0
+      heladosPercentage: totalRevenue > 0 ? (helados.revenue / totalRevenue) * 100 : 0,
+      pacasPercentage: totalRevenue > 0 ? (pacas.revenue / totalRevenue) * 100 : 0
     }
 
     return {
@@ -1384,6 +1485,7 @@ export function getEmployeeSalesAnalysis(
       transactions,
       refrescos,
       helados,
+      pacas,
       averageRevenuePerTransaction,
       productMix
     }

@@ -64,7 +64,7 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
 
   // Calcular precio total
   const quantity = watch('quantity') || 1
-  const pricePerUnit = watchedProduct === 'Helado' ? 1800 : 1000
+  const pricePerUnit = watchedProduct === 'Helado' ? 1800 : watchedProduct === 'Paca' ? 9000 : 1000
   const totalAmount = quantity * pricePerUnit
 
   return (
@@ -94,8 +94,9 @@ export default function IncomeForm({ onSubmit }: IncomeFormProps) {
             {...register('product')}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <option value="Refresco">Refresco ($1,000)</option>
-            <option value="Helado">Helado ($1,800)</option>
+            <option value="Refresco">🥤 Refresco ($1,000)</option>
+            <option value="Helado">🍦 Helado ($1,800)</option>
+                            <option value="Paca">📦 Paca ($9,000)</option>
           </select>
           {errors.product && (
             <p className="text-sm text-red-500">{errors.product.message}</p>

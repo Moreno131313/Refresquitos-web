@@ -37,10 +37,20 @@ export default function IncomeList({ incomes, onDelete }: IncomeListProps) {
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium">{income.type}</p>
                       <Badge 
-                        variant={(income as any).product === 'Helado' ? 'secondary' : 'default'}
-                        className={(income as any).product === 'Helado' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}
+                        variant={
+                          (income as any).product === 'Helado' ? 'secondary' : 
+                          (income as any).product === 'Paca' ? 'outline' : 
+                          'default'
+                        }
+                        className={
+                          (income as any).product === 'Helado' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : (income as any).product === 'Paca'
+                            ? 'bg-orange-100 text-orange-800 border-orange-300'
+                            : 'bg-blue-100 text-blue-800'
+                        }
                       >
-                        {(income as any).product || 'Refresco'}
+                        {(income as any).product === 'Helado' ? '🍦' : (income as any).product === 'Paca' ? '📦' : '🥤'} {(income as any).product || 'Refresco'}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600">
