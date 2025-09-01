@@ -61,6 +61,7 @@ export interface EmployeeCycle extends BaseEntity {
 }
 
 export interface EmployeeCycleInfo {
+  id: string // NUEVO
   employee: 'César' | 'Yesid'
   cycleStartDate: string
 }

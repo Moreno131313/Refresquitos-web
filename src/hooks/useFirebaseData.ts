@@ -13,6 +13,7 @@ import {
   Timestamp 
 } from 'firebase/firestore'
 import { db, isFirebaseAvailable } from '@/lib/firebase'
+import { generateId } from '@/lib/utils'
 import { useAuth } from '@/components/AuthProvider'
 import { 
   Income, 
@@ -48,12 +49,13 @@ export function useFirebaseData() {
     if (activeCycles.length === 0 && user?.email) {
       const today = new Date().toISOString().split('T')[0]
       return [
-        { employee: 'César', cycleStartDate: today },
-        { employee: 'Yesid', cycleStartDate: today }
+        { id: generateId(), employee: 'César', cycleStartDate: today },
+        { id: generateId(), employee: 'Yesid', cycleStartDate: today }
       ]
     }
     
     return activeCycles.map(cycle => ({
+      id: cycle.id || generateId(),
       employee: cycle.employee,
       cycleStartDate: cycle.startDate
     }))
@@ -73,6 +75,94 @@ export function useFirebaseData() {
 
     if (!isFirebaseAvailable()) {
       console.log('Firebase not available, using localStorage fallback')
+      
+      // Cargar datos de localStorage
+      const savedIncomes = localStorage.getItem('refresquitos-incomes')
+      const savedExpenses = localStorage.getItem('refresquitos-expenses')
+      const savedProductions = localStorage.getItem('refresquitos-productions')
+      const savedAbsences = localStorage.getItem('refresquitos-absences')
+      const savedEmployeeCycles = localStorage.getItem('refresquitos-employee-cycles')
+      const savedBonuses = localStorage.getItem('refresquitos-bonuses')
+
+      if (savedIncomes) {
+        const incomesData = JSON.parse(savedIncomes)
+        
+        // Migración automática: corregir precios de Paca en localStorage
+        const correctedIncomes = incomesData.map((income: any) => {
+          if (income.product === 'Paca' && income.amount === income.quantity * 1000) {
+            // Este ingreso de Paca tiene precio incorrecto, corregirlo
+            const correctedAmount = income.quantity * 9000
+            console.log(`🔧 Migrando ingreso de Paca en localStorage: ${income.id} - ${income.amount} → ${correctedAmount}`)
+            
+            return { ...income, amount: correctedAmount }
+          }
+          return income
+        })
+        
+        // Guardar datos corregidos en localStorage
+        if (JSON.stringify(incomesData) !== JSON.stringify(correctedIncomes)) {
+          localStorage.setItem('refresquitos-incomes', JSON.stringify(correctedIncomes))
+        }
+        
+        setIncomes(correctedIncomes)
+      }
+
+      if (savedExpenses) {
+        const expensesData = JSON.parse(savedExpenses)
+        setExpenses(expensesData)
+      }
+
+      if (savedProductions) {
+        const productionsData = JSON.parse(savedProductions)
+        setProductions(productionsData)
+      }
+
+      if (savedAbsences) {
+        const absencesData = JSON.parse(savedAbsences)
+        setAbsences(absencesData)
+      }
+
+      if (savedEmployeeCycles) {
+        const cyclesData = JSON.parse(savedEmployeeCycles)
+        setEmployeeCycles(cyclesData)
+        
+        // Inicializar ciclos automáticamente si no existen
+        const activeCycles = cyclesData.filter((cycle: any) => cycle.isActive)
+        if (activeCycles.length === 0) {
+          const today = new Date().toISOString().split('T')[0]
+          
+          // Crear ciclos para César y Yesid
+          const initializeCycles = async () => {
+            try {
+              await addDoc(collection(db, 'users', user.email, 'employeeCycles'), {
+                employee: 'César',
+                startDate: today,
+                isActive: true,
+                createdAt: new Date().toISOString()
+              })
+              
+              await addDoc(collection(db, 'users', user.email, 'employeeCycles'), {
+                employee: 'Yesid',
+                startDate: today,
+                isActive: true,
+                createdAt: new Date().toISOString()
+              })
+              
+              console.log('✅ Ciclos de empleados inicializados automáticamente')
+            } catch (error) {
+              console.error('Error inicializando ciclos:', error)
+            }
+          }
+          
+          initializeCycles()
+        }
+      }
+
+      if (savedBonuses) {
+        const bonusesData = JSON.parse(savedBonuses)
+        setBonuses(bonusesData)
+      }
+
       setLoading(false)
       return
     }
@@ -93,7 +183,24 @@ export function useFirebaseData() {
             createdAt: data.createdAt || new Date().toISOString()
           }
         }) as Income[]
-        setIncomes(incomesData)
+        
+        // Migración automática: corregir precios de Paca
+        const correctedIncomes = incomesData.map(income => {
+          if (income.product === 'Paca' && income.amount === income.quantity * 1000) {
+            // Este ingreso de Paca tiene precio incorrecto, corregirlo
+            const correctedAmount = income.quantity * 9000
+            console.log(`🔧 Migrando ingreso de Paca: ${income.id} - ${income.amount} → ${correctedAmount}`)
+            
+            // Actualizar en Firebase
+            const incomeDoc = doc(db, 'users', user.email, 'incomes', income.id)
+            updateDoc(incomeDoc, { amount: correctedAmount }).catch(console.error)
+            
+            return { ...income, amount: correctedAmount }
+          }
+          return income
+        })
+        
+        setIncomes(correctedIncomes)
       })
       unsubscribes.push(unsubIncomes)
 
@@ -215,7 +322,7 @@ export function useFirebaseData() {
     if (!collection) throw new Error('User not authenticated')
     
     // Calcular el precio basado en el producto
-    const pricePerUnit = incomeData.product === 'Helado' ? 1800 : 1000
+    const pricePerUnit = incomeData.product === 'Helado' ? 1800 : incomeData.product === 'Paca' ? 9000 : 1000
     const amount = incomeData.quantity * pricePerUnit
     
     // Crear el objeto income base sin campos undefined
@@ -360,7 +467,34 @@ export function useFirebaseData() {
   }
 
   const deleteEmployeeCycle = async (id: string) => {
-    if (!user?.email) throw new Error('User not authenticated')
+    if (!user?.email) {
+      // Fallback a localStorage si no hay usuario autenticado
+      console.log('⚠️ Usuario no autenticado, usando localStorage fallback para eliminar ciclo')
+      const savedCycles = localStorage.getItem('refresquitos-employee-cycles')
+      if (savedCycles) {
+        const cycles = JSON.parse(savedCycles)
+        const updatedCycles = cycles.filter((cycle: any) => cycle.id !== id)
+        localStorage.setItem('refresquitos-employee-cycles', JSON.stringify(updatedCycles))
+        // Actualizar el estado local
+        setEmployeeCycles(updatedCycles)
+      }
+      return
+    }
+    
+    if (!isFirebaseAvailable()) {
+      // Fallback a localStorage si Firebase no está disponible
+      console.log('⚠️ Firebase no disponible, usando localStorage fallback para eliminar ciclo')
+      const savedCycles = localStorage.getItem('refresquitos-employee-cycles')
+      if (savedCycles) {
+        const cycles = JSON.parse(savedCycles)
+        const updatedCycles = cycles.filter((cycle: any) => cycle.id !== id)
+        localStorage.setItem('refresquitos-employee-cycles', JSON.stringify(updatedCycles))
+        // Actualizar el estado local
+        setEmployeeCycles(updatedCycles)
+      }
+      return
+    }
+    
     const cycleDoc = doc(db, 'users', user.email, 'employeeCycles', id)
     await deleteDoc(cycleDoc)
   }

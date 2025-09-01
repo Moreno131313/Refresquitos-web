@@ -45,6 +45,7 @@ interface EmployeeDashboardProps {
   onDeleteAbsence: (id: string) => void
   onUpdateEmployeeCycleStart: (employee: 'César' | 'Yesid', newStartDate: string) => void
   onStartNewCycle: (employee: 'César' | 'Yesid', newStartDate: string) => void
+  deleteEmployeeCycle: (cycleId: string) => Promise<void> // NUEVO
 }
 
 export default function EmployeeDashboard({ 
@@ -54,7 +55,8 @@ export default function EmployeeDashboard({
   onAddAbsence, 
   onDeleteAbsence,
   onUpdateEmployeeCycleStart,
-  onStartNewCycle
+  onStartNewCycle,
+  deleteEmployeeCycle
 }: EmployeeDashboardProps) {
   const [editingCycle, setEditingCycle] = useState<string | null>(null)
   const [newCycleDate, setNewCycleDate] = useState('')
@@ -228,27 +230,25 @@ export default function EmployeeDashboard({
 
       {/* Rendimiento por Ciclos de 30 Días Trabajados */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {employeeCyclePerformance.map((performance) => (
-          <Card key={performance.employee} className="refresquitos-card">
+        {employeeCycleInfoList.map((cycle) => (
+          <Card key={cycle.id} className="refresquitos-card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-blue-600" />
-                  {performance.employee}
+                  {cycle.employee}
                 </span>
-                <div className="flex items-center gap-2">
-                  {performance.isComplete ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-orange-600" />
-                  )}
-                  {performance.bonusEligible === true && (
-                    <Award className="h-5 w-5 text-green-600" />
-                  )}
-                  {performance.bonusEligible === false && (
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                  )}
-                </div>
+                {/* Botón eliminar ciclo, solo si hay más de un ciclo */}
+                {employeeCycleInfoList.length > 1 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteEmployeeCycle(cycle.id)}
+                    title="Eliminar ciclo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </CardTitle>
               <p className="text-sm text-gray-600">
                 Ciclo de Evaluación de 30 Días Trabajados
@@ -262,14 +262,14 @@ export default function EmployeeDashboard({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleEditCycleStart(performance.employee)}
+                    onClick={() => handleEditCycleStart(cycle.employee)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
                     Editar
                   </Button>
                 </div>
                 
-                {editingCycle === performance.employee ? (
+                {editingCycle === cycle.employee ? (
                   <div className="flex gap-2">
                     <Input
                       type="date"
@@ -279,7 +279,7 @@ export default function EmployeeDashboard({
                     />
                     <Button
                       size="sm"
-                      onClick={() => handleSaveCycleStart(performance.employee as 'César' | 'Yesid')}
+                      onClick={() => handleSaveCycleStart(cycle.employee as 'César' | 'Yesid')}
                     >
                       Guardar
                     </Button>
@@ -293,7 +293,7 @@ export default function EmployeeDashboard({
                   </div>
                 ) : (
                   <p className="text-sm font-mono text-blue-600">
-                    {formatDate(performance.cycleStartDate)}
+                    {formatDate(cycle.cycleStartDate)}
                   </p>
                 )}
               </div>
@@ -303,12 +303,13 @@ export default function EmployeeDashboard({
                 <div className="space-y-1">
                   <p className="text-sm text-gray-600">Días Trabajados</p>
                   <p className="text-lg font-bold text-blue-600">
-                    {performance.daysWorked} / 30
+                    {/* {cycle.daysWorked} / 30 */}
+                    0 / 30
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(performance.daysWorked / 30) * 100}%` }}
+                      style={{ width: `0%` }}
                     />
                   </div>
                 </div>
@@ -316,67 +317,67 @@ export default function EmployeeDashboard({
                 <div className="space-y-1">
                   <p className="text-sm text-gray-600">Ventas en Ciclo</p>
                   <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(performance.totalSales)}
+                    {/* {formatCurrency(cycle.totalSales)} */}
+                    $0
                   </p>
                 </div>
               </div>
 
               {/* Estado del Ciclo */}
               <div className="border-t pt-4">
-                {performance.isComplete && performance.cycleEndDate && (
+                {/* {cycle.isComplete && cycle.cycleEndDate && (
                   <div className="mb-3 p-2 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-700 font-medium">
                       ✅ Ciclo Completado
                     </p>
                     <p className="text-xs text-green-600">
-                      Finalizado el: {formatDate(performance.cycleEndDate)}
+                      Finalizado el: {formatDate(cycle.cycleEndDate)}
                     </p>
                   </div>
-                )}
+                )} */}
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Ausencias en Ciclo</span>
-                  <span className={`font-bold ${performance.absencesInCycle <= 4 ? 'text-green-600' : 'text-red-600'}`}>
-                    {performance.absencesInCycle}
+                  <span className="font-bold text-gray-600">
+                    {/* {cycle.absencesInCycle} */}
+                    0
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-medium">Elegible para Bono</span>
-                  <span className={`font-bold ${
-                    performance.bonusEligible === 'PENDING' ? 'text-orange-600' :
-                    performance.bonusEligible ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {performance.bonusEligible === 'PENDING' ? 'PENDIENTE' :
-                     performance.bonusEligible ? 'SÍ' : 'NO'}
+                  <span className="font-bold text-gray-600">
+                    {/* {cycle.bonusEligible === 'PENDING' ? 'PENDIENTE' :
+                     cycle.bonusEligible ? 'SÍ' : 'NO'} */}
+                    PENDIENTE
                   </span>
                 </div>
                 
-                {performance.bonusEligible === false && (
+                {/* {cycle.bonusEligible === false && (
                   <p className="text-xs text-red-500 mt-1">
                     Máximo 4 ausencias para bono
                   </p>
                 )}
                 
-                {performance.bonusEligible === 'PENDING' && (
+                {cycle.bonusEligible === 'PENDING' && (
                   <p className="text-xs text-orange-500 mt-1">
                     Esperando completar 30 días trabajados
                   </p>
-                )}
+                )} */}
               </div>
 
               {/* Botón para Iniciar Nuevo Ciclo */}
-              {performance.isComplete && (
+              {/* {cycle.isComplete && (
                 <div className="border-t pt-4">
                   <Button
-                    onClick={() => handleStartNewEmployeeCycle(performance.employee as 'César' | 'Yesid')}
+                    onClick={() => handleStartNewEmployeeCycle(cycle.employee as 'César' | 'Yesid')}
                     className="w-full bg-green-600 hover:bg-green-700"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Iniciar Nuevo Ciclo de Evaluación
                   </Button>
                 </div>
-              )}
+              )} */}
             </CardContent>
           </Card>
         ))}

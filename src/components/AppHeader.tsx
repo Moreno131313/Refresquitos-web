@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Droplets, TrendingUp, LogOut, User } from 'lucide-react'
+import { Droplets, TrendingUp, LogOut, User, FileText } from 'lucide-react'
 import Image from 'next/image'
 
 interface AppHeaderProps {
@@ -59,6 +59,12 @@ export default function AppHeader({ userEmail, userName, onLogout }: AppHeaderPr
             
             {/* Info usuario */}
             <div className="flex items-center gap-2 md:gap-3">
+              {/* Botón Factura */}
+              <a href="/factura" className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-2 rounded-lg flex items-center gap-2 shadow transition">
+                <FileText className="h-4 w-4" />
+                <span className="hidden md:inline">Factura</span>
+              </a>
+              {/* Info usuario */}
               <div className="text-right text-white">
                 <p className="text-xs md:text-sm text-blue-100">Bienvenido</p>
                 <p className="text-sm md:text-base font-medium flex items-center gap-1 justify-end">

@@ -67,7 +67,8 @@ export default function FinancialDashboardWithFirebase() {
     deleteIncome: firebaseDeleteIncome,
     deleteExpense: firebaseDeleteExpense,
     deleteProduction: firebaseDeleteProduction,
-    deleteAbsence: firebaseDeleteAbsence
+    deleteAbsence: firebaseDeleteAbsence,
+    deleteEmployeeCycle: firebaseDeleteEmployeeCycle
   } = useFirebaseData()
 
   const [activeTab, setActiveTab] = useState('resumen')
@@ -434,6 +435,7 @@ export default function FinancialDashboardWithFirebase() {
               onStartNewCycle={handleStartNewCycle}
               onAddBonus={firebaseAddBonus}
               onMarkBonusPaid={firebaseMarkBonusPaid}
+              deleteEmployeeCycle={firebaseDeleteEmployeeCycle}
             />
           </TabsContent>
         </Tabs>

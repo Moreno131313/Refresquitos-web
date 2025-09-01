@@ -222,7 +222,8 @@ export function calculateSaleCost(
   
   // Asegurar que el producto tenga un valor válido
   const productType = sale.product || 'Refresco'
-  const totalRevenue = sale.quantity * getProductPrice(productType as 'Refresco' | 'Helado' | 'Paca')
+  // Usar el precio real de la venta en lugar del precio configurado
+  const totalRevenue = sale.amount
   const grossProfit = totalRevenue - totalCost
   const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
   
@@ -287,7 +288,8 @@ export function calculateSaleCostByProduct(
   }
   
   const productType = saleProduct as 'Refresco' | 'Helado' | 'Paca'
-  const totalRevenue = sale.quantity * getProductPrice(productType)
+  // Usar el precio real de la venta en lugar del precio configurado
+  const totalRevenue = sale.amount
   const grossProfit = totalRevenue - totalCost
   const grossProfitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0
   
@@ -366,6 +368,12 @@ export function processAllSalesByProduct(
   // Crear lotes de inventario
   const inventoryBatches = createInventoryBatches(productions)
   
+  // DEBUG: Verificar lotes de inventario
+  console.log('🔍 DEBUG - Lotes de inventario creados:')
+  inventoryBatches.forEach((batch, idx) => {
+    console.log(`  - Lote ${idx + 1}: ${batch.quantity} unidades a $${batch.costPerUnit} = $${batch.totalCost}`)
+  })
+  
   // Ordenar ventas por fecha
   const sortedIncomes = [...incomes].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -382,6 +390,12 @@ export function processAllSalesByProduct(
     totalCOGS += saleCalculation.totalCost
     totalGrossProfit += saleCalculation.grossProfit
     
+    // DEBUG: Verificar cálculo de cada venta
+    console.log(`🔍 DEBUG - Venta ${sale.id}: ${sale.quantity} unidades`)
+    console.log(`  - Ingreso: $${sale.amount}`)
+    console.log(`  - Costo calculado: $${saleCalculation.totalCost}`)
+    console.log(`  - Ganancia: $${saleCalculation.grossProfit}`)
+    
     // Actualizar lotes de inventario restando las cantidades vendidas
     for (const usedBatch of saleCalculation.batches) {
       const batch = inventoryBatches.find(b => b.id === usedBatch.batchId)
@@ -390,6 +404,8 @@ export function processAllSalesByProduct(
       }
     }
   }
+  
+  console.log(`🔍 DEBUG - Totales finales: COGS=$${totalCOGS}, Ganancia=$${totalGrossProfit}`)
   
   return {
     salesCalculations,
@@ -825,6 +841,25 @@ export function calculateSeparateFinancialAnalysis(
   const pacaRevenue = pacaSales.reduce((sum, sale) => sum + sale.amount, 0)
   const pacaUnitsSold = pacaSales.reduce((sum, sale) => sum + sale.quantity, 0)
   
+  // DEBUG: Verificar cálculos de pacas
+  console.log('🔍 DEBUG - Análisis de Pacas:')
+  console.log('  - Producciones de pacas:', pacaProductions.length)
+  console.log('  - Ventas de pacas:', pacaSales.length)
+  console.log('  - Ingresos totales:', pacaRevenue)
+  console.log('  - Unidades vendidas:', pacaUnitsSold)
+  console.log('  - COGS total:', pacaAnalysis.totalCOGS)
+  console.log('  - Ganancia bruta:', pacaAnalysis.totalGrossProfit)
+  
+  // Mostrar detalles de cada producción
+  pacaProductions.forEach((prod, idx) => {
+    console.log(`  - Producción ${idx + 1}: ${prod.quantity} unidades a $${prod.costPerUnit} = $${prod.totalCost}`)
+  })
+  
+  // Mostrar detalles de cada venta
+  pacaSales.forEach((sale, idx) => {
+    console.log(`  - Venta ${idx + 1}: ${sale.quantity} unidades por $${sale.amount} ($${sale.amount / sale.quantity} c/u)`)
+  })
+  
   // Calcular métricas de refrescos
   const refrescoGrossProfit = refrescoAnalysis.totalGrossProfit
   const refrescoGrossProfitMargin = refrescoRevenue > 0 ? (refrescoGrossProfit / refrescoRevenue) * 100 : 0
@@ -842,6 +877,7 @@ export function calculateSeparateFinancialAnalysis(
   // Calcular métricas de pacas
   const pacaGrossProfit = pacaAnalysis.totalGrossProfit
   const pacaGrossProfitMargin = pacaRevenue > 0 ? (pacaGrossProfit / pacaRevenue) * 100 : 0
+  // Calcular precio promedio real por unidad usando los precios reales de las ventas
   const pacaAvgRevenuePerUnit = pacaUnitsSold > 0 ? pacaRevenue / pacaUnitsSold : 0
   const pacaAvgCostPerUnit = pacaUnitsSold > 0 ? pacaAnalysis.totalCOGS / pacaUnitsSold : 0
   const pacaAvgProfitPerUnit = pacaUnitsSold > 0 ? pacaGrossProfit / pacaUnitsSold : 0

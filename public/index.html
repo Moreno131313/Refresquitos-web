@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador Excel - Datos NPS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #1e3c72;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #1e3c72;
+            margin: 0;
+            font-size: 2.2em;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .btn {
+            background: #1e3c72;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: block;
+            margin: 20px auto;
+            width: 300px;
+        }
+        .btn:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .preview h3 {
+            color: #1e3c72;
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background: #1e3c72;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background: #f2f2f2;
+        }
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            color: #856404;
+            margin-top: 0;
+        }
+        .instructions ol {
+            color: #856404;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Generador de Archivo Excel</h1>
+            <p>Datos organizados de tu encuesta NPS para crear gráficos en Excel</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 Datos procesados de tu archivo:</h3>
+            <ul>
+                <li><strong>Archivo fuente:</strong> ENCUESTA A GRAFICAR.xlsx</li>
+                <li><strong>Total respuestas:</strong> 693</li>
+                <li><strong>Periodo:</strong> Enero 2024</li>
+                <li><strong>NPS Score:</strong> 80.7 (Excelente)</li>
+            </ul>
+        </div>
+
+        <button class="btn" onclick="generarExcel()">
+            📥 Descargar Archivo Excel con Datos Organizados
+        </button>
+
+        <div id="mensaje" style="display: none;"></div>
+
+        <div class="preview">
+            <h3>Vista previa de los datos que se incluirán:</h3>
+            
+            <h4>🔸 Hoja 1: Distribución de Calificaciones</h4>
+            <table>
+                <tr><th>Calificación</th><th>Cantidad</th><th>Porcentaje</th></tr>
+                <tr><td>1</td><td>18</td><td>2.6%</td></tr>
+                <tr><td>2</td><td>2</td><td>0.3%</td></tr>
+                <tr><td>3</td><td>1</td><td>0.1%</td></tr>
+                <tr><td>...</td><td>...</td><td>...</td></tr>
+                <tr><td>10</td><td>545</td><td>78.6%</td></tr>
+            </table>
+
+            <h4>🔸 Hoja 2: Categorías NPS</h4>
+            <table>
+                <tr><th>Categoría</th><th>Rango</th><th>Cantidad</th><th>Porcentaje</th></tr>
+                <tr><td>Promotores</td><td>9-10</td><td>590</td><td>85.1%</td></tr>
+                <tr><td>Pasivos</td><td>7-8</td><td>72</td><td>10.4%</td></tr>
+                <tr><td>Detractores</td><td>0-6</td><td>31</td><td>4.5%</td></tr>
+            </table>
+
+            <h4>🔸 Hoja 3: Tipo de Atención</h4>
+            <table>
+                <tr><th>Tipo</th><th>Cantidad</th><th>Porcentaje</th></tr>
+                <tr><td>Con Agente</td><td>212</td><td>30.6%</td></tr>
+                <tr><td>Sin Agente</td><td>480</td><td>69.4%</td></tr>
+            </table>
+        </div>
+
+        <div class="instructions">
+            <h3>📝 Cómo usar el archivo en Excel:</h3>
+            <ol>
+                <li><strong>Descarga el archivo</strong> haciendo clic en el botón azul</li>
+                <li><strong>Abre el archivo</strong> en Microsoft Excel</li>
+                <li><strong>Verás 5 hojas:</strong>
+                    <ul>
+                        <li>Distribución (para gráfico de columnas)</li>
+                        <li>Categorías NPS (para gráfico circular)</li>
+                        <li>Atención (para gráfico de barras)</li>
+                        <li>Métricas (resumen de KPIs)</li>
+                        <li>Instrucciones (guía detallada)</li>
+                    </ul>
+                </li>
+                <li><strong>Selecciona los datos</strong> que quieres graficar</li>
+                <li><strong>Ve a Insertar → Gráficos</strong> y elige el tipo</li>
+                <li><strong>Personaliza</strong> colores, títulos y etiquetas</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function generarExcel() {
+            // Crear un nuevo workbook
+            const wb = XLSX.utils.book_new();
+
+            // Datos de distribución de calificaciones
+            const datosDistribucion = [
+                ['Calificación', 'Cantidad', 'Porcentaje'],
+                [1, 18, '2.6%'],
+                [2, 2, '0.3%'],
+                [3, 1, '0.1%'],
+                [4, 2, '0.3%'],
+                [5, 4, '0.6%'],
+                [6, 4, '0.6%'],
+                [7, 13, '1.9%'],
+                [8, 59, '8.5%'],
+                [9, 45, '6.5%'],
+                [10, 545, '78.6%']
+            ];
+
+            // Datos de categorías NPS
+            const datosNPS = [
+                ['Categoría', 'Rango', 'Cantidad', 'Porcentaje'],
+                ['Promotores', '9-10', 590, '85.1%'],
+                ['Pasivos', '7-8', 72, '10.4%'],
+                ['Detractores', '0-6', 31, '4.5%']
+            ];
+
+            // Datos de atención
+            const datosAtencion = [
+                ['Tipo de Atención', 'Cantidad', 'Porcentaje'],
+                ['Con Agente', 212, '30.6%'],
+                ['Sin Agente', 480, '69.4%']
+            ];
+
+            // Métricas principales
+            const metricas = [
+                ['Métrica', 'Valor'],
+                ['NPS Score', 80.7],
+                ['Total Respuestas', 693],
+                ['Promedio Calificación', 9.4],
+                ['Porcentaje Promotores', '85.1%'],
+                ['Porcentaje Pasivos', '10.4%'],
+                ['Porcentaje Detractores', '4.5%'],
+                [''],
+                ['Distribución por Calificación:', ''],
+                ['Calificación 1', '18 respuestas (2.6%)'],
+                ['Calificación 2', '2 respuestas (0.3%)'],
+                ['Calificación 3', '1 respuestas (0.1%)'],
+                ['Calificación 4', '2 respuestas (0.3%)'],
+                ['Calificación 5', '4 respuestas (0.6%)'],
+                ['Calificación 6', '4 respuestas (0.6%)'],
+                ['Calificación 7', '13 respuestas (1.9%)'],
+                ['Calificación 8', '59 respuestas (8.5%)'],
+                ['Calificación 9', '45 respuestas (6.5%)'],
+                ['Calificación 10', '545 respuestas (78.6%)']
+            ];
+
+            // Instrucciones detalladas
+            const instrucciones = [
+                ['GUÍA COMPLETA PARA CREAR GRÁFICOS EN EXCEL'],
+                [''],
+                ['📊 GRÁFICO 1: Distribución de Calificaciones (Columnas)'],
+                ['1. Ve a la hoja "Distribución"'],
+                ['2. Selecciona el rango A1:C11 (incluye headers)'],
+                ['3. Insertar → Gráficos → Columnas → Columna agrupada'],
+                ['4. Título sugerido: "Distribución de Calificaciones NPS"'],
+                ['5. Eje X: Calificación (1-10)'],
+                ['6. Eje Y: Cantidad de respuestas'],
+                ['7. Considera usar colores gradientes (rojo→amarillo→verde)'],
+                [''],
+                ['🎯 GRÁFICO 2: Categorías NPS (Circular)'],
+                ['1. Ve a la hoja "Categorías NPS"'],
+                ['2. Selecciona columnas A y C (Categoría y Cantidad)'],
+                ['3. Insertar → Gráficos → Circular → Circular 2D o Dona'],
+                ['4. Título sugerido: "Distribución por Categorías NPS"'],
+                ['5. Colores recomendados:'],
+                ['   - Promotores: Verde (#28A745)'],
+                ['   - Pasivos: Amarillo (#FFC107)'],
+                ['   - Detractores: Rojo (#DC3545)'],
+                ['6. Mostrar porcentajes en las etiquetas'],
+                ['7. Agregar leyenda en posición superior'],
+                [''],
+                ['👥 GRÁFICO 3: Tipo de Atención (Barras)'],
+                ['1. Ve a la hoja "Atención"'],
+                ['2. Selecciona el rango A1:C3'],
+                ['3. Insertar → Gráficos → Columnas o Barras'],
+                ['4. Título sugerido: "Tipo de Atención Recibida"'],
+                ['5. Mostrar valores en las barras'],
+                [''],
+                ['🔧 FÓRMULAS ÚTILES PARA TUS ANÁLISIS:'],
+                ['=COUNTIF(rango,">=9") → Contar Promotores'],
+                ['=COUNTIFS(rango,">=7",rango,"<=8") → Contar Pasivos'],
+                ['=COUNTIF(rango,"<=6") → Contar Detractores'],
+                ['=((Promotores-Detractores)/Total)*100 → Calcular NPS'],
+                ['=AVERAGE(rango) → Promedio de calificaciones'],
+                ['=MAX(rango) → Calificación máxima'],
+                ['=MIN(rango) → Calificación mínima'],
+                ['=MODE(rango) → Calificación más frecuente'],
+                [''],
+                ['📈 CONSEJOS PARA MEJORAR TUS GRÁFICOS:'],
+                ['1. Usa títulos descriptivos y claros'],
+                ['2. Agrega etiquetas de datos cuando sea relevante'],
+                ['3. Mantén colores consistentes con el estándar NPS'],
+                ['4. Incluye el total de respuestas en los títulos'],
+                ['5. Considera agregar líneas de referencia en gráficos de tendencia'],
+                ['6. Usa fuentes legibles (Arial, Calibri)'],
+                ['7. Mantén un diseño limpio y profesional'],
+                [''],
+                ['📋 DATOS DE TU ENCUESTA:'],
+                ['Archivo fuente: ENCUESTA A GRAFICAR.xlsx'],
+                ['Periodo: Enero 2024'],
+                ['Total respuestas válidas: 693'],
+                ['NPS Score: 80.7 (Excelente - por encima de 70)'],
+                ['Promedio calificación: 9.4/10'],
+                ['Calificación más común: 10 (78.6% de respuestas)']
+            ];
+
+            // Crear hojas
+            const wsDistribucion = XLSX.utils.aoa_to_sheet(datosDistribucion);
+            const wsNPS = XLSX.utils.aoa_to_sheet(datosNPS);
+            const wsAtencion = XLSX.utils.aoa_to_sheet(datosAtencion);
+            const wsMetricas = XLSX.utils.aoa_to_sheet(metricas);
+            const wsInstrucciones = XLSX.utils.aoa_to_sheet(instrucciones);
+
+            // Agregar hojas al workbook
+            XLSX.utils.book_append_sheet(wb, wsDistribucion, "Distribución");
+            XLSX.utils.book_append_sheet(wb, wsNPS, "Categorías NPS");
+            XLSX.utils.book_append_sheet(wb, wsAtencion, "Atención");
+            XLSX.utils.book_append_sheet(wb, wsMetricas, "Métricas");
+            XLSX.utils.book_append_sheet(wb, wsInstrucciones, "Instrucciones");
+
+            // Guardar el archivo
+            XLSX.writeFile(wb, 'Datos_NPS_Para_Graficos.xlsx');
+
+            // Mostrar mensaje de éxito
+            const mensaje = document.getElementById('mensaje');
+            mensaje.className = 'success';
+            mensaje.innerHTML = '✅ ¡Archivo descargado exitosamente! <br>Nombre: "Datos_NPS_Para_Graficos.xlsx"';
+            mensaje.style.display = 'block';
+
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                mensaje.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
