@@ -10,7 +10,9 @@ import {
   onSnapshot, 
   query, 
   orderBy,
-  Timestamp 
+  Timestamp,
+  getDoc,
+  getDocs
 } from 'firebase/firestore'
 import { db, isFirebaseAvailable } from '@/lib/firebase'
 import { generateId } from '@/lib/utils'
@@ -27,7 +29,8 @@ import {
   ExpenseFormData,
   ProductionFormData,
   AbsenceFormData,
-  EmployeeCycleFormData
+  EmployeeCycleFormData,
+  DamagedProduct
 } from '@/types/unified'
 
 export function useFirebaseData() {
@@ -40,6 +43,7 @@ export function useFirebaseData() {
   const [bonuses, setBonuses] = useState<EmployeeBonus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [damagedProducts, setDamagedProducts] = useState<DamagedProduct[]>([]);
 
   // Computed property for employeeCycleInfoList
   const employeeCycleInfoList: EmployeeCycleInfo[] = useMemo(() => {
@@ -304,6 +308,25 @@ export function useFirebaseData() {
       })
       unsubscribes.push(unsubBonuses)
 
+      // Suscripción a productos dañados
+      const damagedProductsCollection = collection(db, 'users', user.email, 'damagedProducts');
+      const damagedProductsQuery = query(damagedProductsCollection, orderBy('date', 'desc'));
+      const unsubDamagedProducts = onSnapshot(damagedProductsQuery, (snapshot) => {
+        const productsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          // Migración automática: si no tiene id, actualizarlo
+          if (!data.id) {
+            updateDoc(doc.ref, { id: doc.id });
+          }
+          return {
+            id: doc.id,
+            ...data,
+          };
+        }) as DamagedProduct[];
+        setDamagedProducts(productsData);
+      });
+      unsubscribes.push(unsubDamagedProducts);
+
       setLoading(false)
     } catch (err) {
       console.error('Error setting up Firebase listeners:', err)
@@ -399,6 +422,14 @@ export function useFirebaseData() {
     
     await addDoc(collection, cycle)
   }
+
+  const addDamagedProduct = async (product: DamagedProduct) => {
+    const collection = getUserCollection('damagedProducts');
+    if (!collection) throw new Error('User not authenticated');
+    const docRef = await addDoc(collection, { ...product, id: generateId() });
+    setDamagedProducts(prev => [...prev, { ...product, id: docRef.id }]);
+    // NO crear ingreso en incomes - solo registrar en damagedProducts
+  };
 
   // Update functions
   const updateEmployeeCycleStart = async (employee: 'César' | 'Yesid', newStartDate: string) => {
@@ -529,6 +560,50 @@ export function useFirebaseData() {
     await deleteDoc(bonusDoc)
   }
 
+  const deleteDamagedProduct = async (id: string) => {
+    const collection = getUserCollection('damagedProducts');
+    if (!collection) throw new Error('User not authenticated');
+    const docRef = doc(collection, id);
+    await deleteDoc(docRef);
+    setDamagedProducts(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Función de limpieza para eliminar ingresos antiguos de tipo "Producto Dañado"
+  const cleanupOldDamagedProductIncomes = async () => {
+    if (!user?.email) return;
+    
+    try {
+      const incomesCollection = getUserCollection('incomes');
+      if (!incomesCollection) return;
+      
+      // Buscar todos los ingresos de tipo "Producto Dañado"
+      const snapshot = await getDocs(query(incomesCollection));
+      const documentsToDelete: string[] = [];
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.type === 'Producto Dañado' || data.type === 'Restauración por eliminación de daño') {
+          documentsToDelete.push(doc.id);
+        }
+      });
+      
+      // Eliminar todos los documentos encontrados
+      for (const docId of documentsToDelete) {
+        const docRef = doc(incomesCollection, docId);
+        await deleteDoc(docRef);
+      }
+      
+      console.log(`🧹 Limpieza completada: ${documentsToDelete.length} registros antiguos eliminados`);
+      
+      if (documentsToDelete.length > 0) {
+        // Recargar los datos después de la limpieza
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error durante la limpieza:', error);
+    }
+  };
+
   return {
     incomes,
     expenses,
@@ -552,6 +627,10 @@ export function useFirebaseData() {
     deleteProduction,
     deleteAbsence,
     deleteEmployeeCycle,
-    deleteBonus
+    deleteBonus,
+    addDamagedProduct,
+    deleteDamagedProduct,
+    damagedProducts,
+    cleanupOldDamagedProductIncomes
   }
 } 

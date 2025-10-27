@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react'
 import { formatCurrency, generateId, getCurrentDate } from '@/lib/utils'
 import { 
-  IncomeItem, ExpenseItem, ProductionItem, AbsenceRecord 
+  IncomeItem, ExpenseItem, ProductionItem, AbsenceRecord
 } from '@/types/financials'
 import { 
-  Income, Expense, Production, Absence, EmployeeCycleInfo, FinancialSummary, ProductionSummary 
+  Income, Expense, Production, Absence, EmployeeCycleInfo, FinancialSummary, ProductionSummary, DamagedProduct
 } from '@/types/unified'
 import { calculateEnhancedFinancialSummary, getSeparateInventoryStatus, calculateSeparateFinancialAnalysis } from '@/lib/business-logic'
 import { useToast } from '@/hooks/useToast'
-import { v4 as uuidv4 } from 'uuid'
 
 export function useDashboardData() {
   const [incomes, setIncomes] = useState<IncomeItem[]>([])
@@ -18,6 +17,7 @@ export function useDashboardData() {
   const [employeeCycleInfoList, setEmployeeCycleInfoList] = useState<EmployeeCycleInfo[]>([])
   const [activeTab, setActiveTab] = useState('resumen')
   const { toast } = useToast()
+  const [damagedProducts, setDamagedProducts] = useState<DamagedProduct[]>([]);
 
   useEffect(() => {
     const savedIncomes = localStorage.getItem('refresquitos-incomes')
@@ -25,6 +25,7 @@ export function useDashboardData() {
     const savedProductions = localStorage.getItem('refresquitos-productions')
     const savedAbsences = localStorage.getItem('refresquitos-absences')
     const savedEmployeeCycles = localStorage.getItem('refresquitos-employee-cycles')
+    const savedDamagedProducts = localStorage.getItem('refresquitos-damaged-products')
 
     if (savedIncomes) {
       const parsedIncomes = JSON.parse(savedIncomes)
@@ -69,6 +70,11 @@ export function useDashboardData() {
       setEmployeeCycleInfoList(initialCycles)
       localStorage.setItem('refresquitos-employee-cycles', JSON.stringify(initialCycles))
     }
+    
+    // Cargar productos dañados
+    if (savedDamagedProducts) {
+      setDamagedProducts(JSON.parse(savedDamagedProducts))
+    }
   }, [])
 
   useEffect(() => {
@@ -86,6 +92,10 @@ export function useDashboardData() {
   useEffect(() => {
     localStorage.setItem('refresquitos-employee-cycles', JSON.stringify(employeeCycleInfoList))
   }, [employeeCycleInfoList])
+  
+  useEffect(() => {
+    localStorage.setItem('refresquitos-damaged-products', JSON.stringify(damagedProducts))
+  }, [damagedProducts])
 
   const addIncome = (incomeData: any) => {
     const pricePerUnit = incomeData.product === 'Helado' ? 1800 : incomeData.product === 'Paca' ? 9000 : 1000
@@ -401,6 +411,45 @@ export function useDashboardData() {
       description: 'El ciclo de empleado ha sido eliminado',
     })
   }
+
+  function addDamagedProduct(product: DamagedProduct) {
+    setDamagedProducts(prev => {
+      const updated = [...prev, product];
+      localStorage.setItem('refresquitos-damaged-products', JSON.stringify(updated));
+      return updated;
+    });
+    // NO crear ingreso en incomes - solo registrar en damagedProducts
+  }
+
+  function deleteDamagedProduct(idx: number) {
+    setDamagedProducts(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      localStorage.setItem('refresquitos-damaged-products', JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  // Función de limpieza para eliminar ingresos antiguos de tipo "Producto Dañado"
+  function cleanupOldDamagedProductIncomes() {
+    const savedIncomes = localStorage.getItem('refresquitos-incomes');
+    if (!savedIncomes) return;
+    
+    try {
+      const incomes = JSON.parse(savedIncomes);
+      const cleanedIncomes = incomes.filter((income: any) => 
+        income.type !== 'Producto Dañado' && income.type !== 'Restauración por eliminación de daño'
+      );
+      
+      if (cleanedIncomes.length !== incomes.length) {
+        localStorage.setItem('refresquitos-incomes', JSON.stringify(cleanedIncomes));
+        setIncomes(cleanedIncomes);
+        console.log(`🧹 Limpieza completada: ${incomes.length - cleanedIncomes.length} registros antiguos eliminados de localStorage`);
+      }
+    } catch (error) {
+      console.error('Error durante la limpieza de localStorage:', error);
+    }
+  }
+
   return {
     incomes,
     expenses,
@@ -429,6 +478,10 @@ export function useDashboardData() {
     separateFinancialAnalysis,
     financialSummary,
     productionSummary,
-    deleteEmployeeCycle
+    deleteEmployeeCycle,
+    addDamagedProduct,
+    deleteDamagedProduct,
+    damagedProducts,
+    cleanupOldDamagedProductIncomes
   }
 }

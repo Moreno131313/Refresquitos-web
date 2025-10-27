@@ -277,3 +277,12 @@ export interface EmployeeCycleDetail {
   bonusAmount: number
   isComplete: boolean
 } 
+
+export interface DamagedProduct extends BaseEntity {
+  product: 'Refresco' | 'Helado' | 'Paca';
+  quantity: number;
+  reason: 'Roto' | 'Dañado';
+  date: string;
+  description?: string;
+  userId?: string;
+} 

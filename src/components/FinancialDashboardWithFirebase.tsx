@@ -17,7 +17,8 @@ import {
   ProductionFormData,
   AbsenceFormData,
   FinancialSummary,
-  ProductionSummary
+  ProductionSummary,
+  DamagedProduct
 } from '@/types/unified'
 import { formatCurrency, generateId, getCurrentDate } from '@/lib/utils'
 import AppHeader from './AppHeader'
@@ -68,7 +69,10 @@ export default function FinancialDashboardWithFirebase() {
     deleteExpense: firebaseDeleteExpense,
     deleteProduction: firebaseDeleteProduction,
     deleteAbsence: firebaseDeleteAbsence,
-    deleteEmployeeCycle: firebaseDeleteEmployeeCycle
+    deleteEmployeeCycle: firebaseDeleteEmployeeCycle,
+    addDamagedProduct,
+    deleteDamagedProduct,
+    damagedProducts
   } = useFirebaseData()
 
   const [activeTab, setActiveTab] = useState('resumen')
@@ -81,6 +85,9 @@ export default function FinancialDashboardWithFirebase() {
     incomes: [] as Income[],
     expenses: [] as Expense[]
   })
+
+  const [form, setForm] = useState({ product: '', quantity: 1, reason: '', date: '' });
+  const [filter, setFilter] = useState({ from: '', to: '' });
 
   useEffect(() => {
     try {
@@ -304,6 +311,32 @@ export default function FinancialDashboardWithFirebase() {
     )
   }
 
+  const filteredDamaged = damagedProducts && damagedProducts.filter(item => {
+    if (filter.from && item.date < filter.from) return false;
+    if (filter.to && item.date > filter.to) return false;
+    return true;
+  });
+
+  const handleCleanupOldIncomes = async () => {
+    const confirmed = window.confirm('¿Estás seguro de que quieres limpiar registros antiguos de productos dañados de la base de datos? Esto solucionará el problema de inventario.');
+    
+    if (confirmed) {
+      try {
+        await cleanupOldDamagedProductIncomes();
+        toast({
+          title: "Limpieza completada",
+          description: "Se eliminaron los registros antiguos que causaban problemas de inventario.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error en la limpieza",
+          description: "Hubo un problema al limpiar los registros antiguos.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       <AppHeader 
@@ -314,7 +347,7 @@ export default function FinancialDashboardWithFirebase() {
       
       <div className="container mx-auto p-3 md:p-4 space-y-4 md:space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-7 h-auto p-1">
             <TabsTrigger value="resumen" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Resumen</span>
@@ -344,6 +377,11 @@ export default function FinancialDashboardWithFirebase() {
               <Users className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Empleados</span>
               <span className="sm:hidden">Emp</span>
+            </TabsTrigger>
+            <TabsTrigger value="novedades" className="flex flex-col md:flex-row items-center gap-1 md:gap-2 p-2 md:p-3 text-xs md:text-sm">
+              <Package className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Novedades</span>
+              <span className="sm:hidden">Nov</span>
             </TabsTrigger>
           </TabsList>
 
@@ -437,6 +475,80 @@ export default function FinancialDashboardWithFirebase() {
               onMarkBonusPaid={firebaseMarkBonusPaid}
               deleteEmployeeCycle={firebaseDeleteEmployeeCycle}
             />
+          </TabsContent>
+
+          <TabsContent value="novedades" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Registrar producto roto o dañado</h3>
+                             <Button 
+                 onClick={handleCleanupOldIncomes}
+                 variant="outline"
+                 size="sm"
+                 className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+               >
+                 🧹 Limpiar registros antiguos
+               </Button>
+            </div>
+            <div className="p-4 bg-white rounded-lg shadow">
+              <form
+                onSubmit={async e => {
+                  e.preventDefault();
+                  if (!form.product || !form.quantity || !form.reason || !form.date) return;
+                  await addDamagedProduct({
+                    product: form.product,
+                    quantity: Number(form.quantity),
+                    reason: form.reason,
+                    date: form.date,
+                    createdAt: new Date().toISOString(),
+                  });
+                  setForm({ product: '', quantity: 1, reason: '', date: '' });
+                }}
+                className="flex flex-col gap-2 mb-4"
+              >
+                <label className="font-medium">Producto</label>
+                <select className="border rounded p-2" required value={form.product} onChange={e => setForm(f => ({ ...f, product: e.target.value }))}>
+                  <option value="">Selecciona</option>
+                  <option value="Refresco">Refresco</option>
+                  <option value="Helado">Helado</option>
+                  <option value="Paca">Paca</option>
+                </select>
+                <label className="font-medium">Cantidad</label>
+                <input type="number" min="1" className="border rounded p-2" required value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
+                <label className="font-medium">Motivo</label>
+                <select className="border rounded p-2" required value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}>
+                  <option value="">Selecciona</option>
+                  <option value="Roto">Roto</option>
+                  <option value="Dañado">Dañado</option>
+                </select>
+                <label className="font-medium">Fecha</label>
+                <input type="date" className="border rounded p-2" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+                <button type="submit" className="bg-blue-600 text-white rounded p-2 mt-2">Registrar</button>
+              </form>
+              <div className="flex gap-2 mb-2">
+                <label className="text-xs">Desde:</label>
+                <input type="date" value={filter.from} onChange={e => setFilter(f => ({ ...f, from: e.target.value }))} className="border rounded p-1 text-xs" />
+                <label className="text-xs">Hasta:</label>
+                <input type="date" value={filter.to} onChange={e => setFilter(f => ({ ...f, to: e.target.value }))} className="border rounded p-1 text-xs" />
+              </div>
+              {filteredDamaged && filteredDamaged.length > 0 ? (
+                <div className="mt-2">
+                  <h3 className="font-semibold mb-2">Historial de productos dañados</h3>
+                  <ul className="divide-y divide-gray-200">
+                    {filteredDamaged.map((item, idx) => (
+                      <li key={item.id || idx} className="py-2 flex flex-col md:flex-row md:items-center md:gap-4">
+                        <span className="font-medium">{item.product}</span>
+                        <span className="text-sm">Cantidad: {item.quantity}</span>
+                        <span className="text-sm">Motivo: {item.reason}</span>
+                        <span className="text-xs text-gray-500">Fecha: {item.date}</span>
+                        <button onClick={() => deleteDamagedProduct(item.id)} className="ml-auto text-red-600 hover:underline text-xs">Eliminar</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 mt-2">No hay productos dañados en el rango seleccionado.</p>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

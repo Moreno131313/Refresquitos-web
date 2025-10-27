@@ -491,7 +491,7 @@ export function getCurrentInventoryStatus(
   const { finalInventoryBatches } = processAllSales(productions, incomes)
   
   const totalProduced = productions.reduce((sum, prod) => sum + prod.quantity, 0)
-  const totalSold = incomes.reduce((sum, income) => sum + income.quantity, 0)
+  const totalSold = filtrarIngresosParaInventario(incomes).reduce((sum, income) => sum + income.quantity, 0)
   const currentInventory = finalInventoryBatches.reduce((sum, batch) => sum + batch.remainingQuantity, 0)
   
   const totalInventoryValue = finalInventoryBatches.reduce(
@@ -522,9 +522,9 @@ export function getSeparateInventoryStatus(
   const heladoProductions = productions.filter(p => p.product === 'Helado')
   const pacaProductions = productions.filter(p => p.product === 'Paca')
   
-  const refrescoSales = incomes.filter(i => i.product === 'Refresco')
-  const heladoSales = incomes.filter(i => i.product === 'Helado')
-  const pacaSales = incomes.filter(i => i.product === 'Paca')
+  const refrescoSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === 'Refresco')
+  const heladoSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === 'Helado')
+  const pacaSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === 'Paca')
   
   // Calcular inventario para cada producto
   const refrescoInventory = getCurrentInventoryStatus(refrescoProductions, refrescoSales)
@@ -591,7 +591,7 @@ export function calculatePotentialSaleByProduct(
 } {
   // Filtrar por producto específico
   const productProductions = productions.filter(p => p.product === product)
-  const productSales = incomes.filter(i => i.product === product)
+  const productSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === product)
   
   const inventoryStatus = getCurrentInventoryStatus(productProductions, productSales)
   const canSell = quantity <= inventoryStatus.currentInventory
@@ -822,9 +822,9 @@ export function calculateSeparateFinancialAnalysis(
   const pacaProductions = productions.filter(p => p.product === 'Paca')
   
   // Separar ventas por producto
-  const refrescoSales = incomes.filter(i => i.product === 'Refresco')
-  const heladoSales = incomes.filter(i => i.product === 'Helado')
-  const pacaSales = incomes.filter(i => i.product === 'Paca')
+  const refrescoSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === 'Refresco')
+  const heladoSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === 'Helado')
+  const pacaSales = filtrarIngresosParaInventario(incomes).filter(i => i.product === 'Paca')
   
   // Procesar ventas de refrescos
   const refrescoAnalysis = processAllSalesByProduct(refrescoProductions, refrescoSales)
@@ -1526,4 +1526,14 @@ export function getEmployeeSalesAnalysis(
       productMix
     }
   }).sort((a, b) => b.totalRevenue - a.totalRevenue) // Ordenar por ingresos descendente
+}
+
+function filtrarIngresosParaInventario(incomes: Income[]): Income[] {
+  // Solo ventas reales restan inventario - productos dañados se manejan por separado
+  return incomes.filter(i =>
+    i.type === 'Venta Empleado' ||
+    i.type === 'Pedido Puerto López' ||
+    i.type === 'Pedido Puerto Gaitán' ||
+    i.type === 'Paca Villavicencio'
+  );
 }
